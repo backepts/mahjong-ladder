@@ -50,9 +50,9 @@ GAS Web App（Beck 個人 Gmail becktsai0708，任何人可呼叫）
 
 ## 目前進度
 
-- 做到哪：戰況回顧（像素小夥伴牌桌＋日期／人員篩選）做好，後端已上線（v4 回傳造型），前台在 LAB（replay 分支）等 Beck 試用
-- 下一步：Beck 試完說可以 → merge replay 到 main 上線
-- 等 Beck 決定：LAB 戰況回顧是否上線
+- 做到哪：戰況回顧（像素小夥伴牌桌、日期／人員篩選、贏家王冠／輸家眼淚）已上線；後端 v5（造型欄＋action=style）
+- 下一步：無
+- 等 Beck 決定：無
 - 改版流程：改 index.html → `python3 tools/build_lab.py` → 把 lab/（＋新增的共用檔如 icons/）帶到 main 推上去給 Beck 看 → 同意才 merge 推 main（push main＝網頁立刻換版；每天 18:00 自動備份也會 push，改到一半一定開分支）
 - 圖示來源：DUST FISH 插畫（https://jp.pinterest.com/pin/826480969128407920/），裁切範圍 (130,120)-(630,620)；Beck 決定群組自用、網頁底部標註作者
 - 之後再做：「誰跟誰同組時的勝率」分析
