@@ -30,6 +30,6 @@ A 欄      │ 玩家名稱；空白列略過
 
 ## 目前進度
 
-- 做到哪：前台完成、本機驗證數字正確（10/21、10/22 兩場）
-- 下一步：開 GitHub repo 並啟用 GitHub Pages 上線
-- 等 Beck 決定：同意上線
+- 做到哪：已上線 https://backepts.github.io/mahjong-ladder/ （repo backepts/mahjong-ladder，main 分支根目錄）；線上數字已驗證
+- 下一步：無；改版改 index.html → commit → push 即自動更新（約 1 分鐘）
+- 等 Beck 決定：無

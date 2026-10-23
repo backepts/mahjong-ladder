@@ -1,3 +1,4 @@
 # CHANGELOG
 
 - 2026-10-23 建立前台：排行榜（段位）、個人戰績卡（走勢圖）、莊家抽頭統計、帳不平檢查；直接讀公開 Sheet CSV
+- 2026-10-23 上線 GitHub Pages：https://backepts.github.io/mahjong-ladder/
