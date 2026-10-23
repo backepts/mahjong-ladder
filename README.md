@@ -50,7 +50,7 @@ GAS Web App（Beck 個人 Gmail becktsai0708，任何人可呼叫）
 
 ## 目前進度
 
-- 做到哪：記帳功能、「加入主畫面」（manifest＋DUST FISH 貓咪圖示、桌面名稱「番仔碼頭」、底部標註作者）都已上線（main）
+- 做到哪：等級改看金額（至尊雀王～地獄倒霉鬼）、記帳功能、「加入主畫面」（manifest＋DUST FISH 貓咪圖示、桌面名稱「番仔碼頭」、底部標註作者）都已上線（main）
 - 下一步：無
 - 等 Beck 決定：無
 - 改版流程：改 index.html → `python3 tools/build_lab.py` → 把 lab/（＋新增的共用檔如 icons/）帶到 main 推上去給 Beck 看 → 同意才 merge 推 main（push main＝網頁立刻換版；每天 18:00 自動備份也會 push，改到一半一定開分支）
