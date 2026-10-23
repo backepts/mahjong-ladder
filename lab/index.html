@@ -91,6 +91,13 @@ footer a{color:var(--sub)}
 .seat .num{font-size:14px;font-weight:700}
 .felt{width:100%;max-width:160px;aspect-ratio:1;background:#1e6b4f;border:6px solid #6b3f1f;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
 .extra{display:flex;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+/* 讀取中：胖胖像素橘貓走路（4 格腳步輪播＋左到右移動） */
+.walk{position:relative;height:44px;overflow:hidden;margin:0 0 4px}
+.walk svg{position:absolute;top:0;animation:walk 4.5s linear infinite}
+.walk g{visibility:hidden;animation:frame .56s steps(1) infinite}
+.road{height:2px;margin:2px 0 12px;background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px)}
+@keyframes walk{from{left:-64px}to{left:100%}}
+@keyframes frame{0%{visibility:visible}25%,100%{visibility:hidden}}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -369,6 +376,15 @@ function showView(v) {
   document.querySelectorAll('#views .tab').forEach(t => t.classList.toggle('on', t.dataset.v === v));
 }
 
+const CAT_TOP = ['.........K...K..', '.........KK.KK..', '....KKKKKKKKKKK.', '..KKKDKKKKEKKEK.', '.KKKKKDKKKKKPKKK', 'TKKDKKKKDKKKKKKK', 'TKKKKDKKKKDKKKK.', '.KKKKKKKKKKKKKK.', '..KKWWWWWWWWKK..', '...KKKKKKKKKK...'];
+const CAT_LEGS = [['...K.K....K.K...'], ['....KK....KK....'], ['..K..K...K..K...'], ['....KK....KK....']];
+function catLoader(text) {
+  const c = { K: '#f59e0b', D: '#c2410c', T: '#f59e0b', E: '#111111', P: '#f472b6', W: '#fcd34d' };
+  const px = (rows, y0) => rows.map((r, y) => [...r].map((ch, x) => ch === '.' ? '' : `<rect x="${x}" y="${y + y0}" width="1" height="1" fill="${c[ch]}"/>`).join('')).join('');
+  const frames = CAT_LEGS.map((l, i) => `<g style="animation-delay:${(i * 0.14 - 0.56).toFixed(2)}s">${px(l, 10)}</g>`).join('');
+  return `<div class="msg"><div class="walk"><svg width="64" height="44" viewBox="0 0 16 11" shape-rendering="crispEdges" aria-hidden="true">${px(CAT_TOP, 0)}${frames}</svg></div><div class="road"></div>${text}</div>`;
+}
+
 async function load() {
   $('meta').textContent = '讀取中…';
   try {
@@ -601,6 +617,7 @@ $('toEntry').addEventListener('click', () => {
   if (!RAW) return;
   showEntry($('entry').hidden);
 });
+$('board').innerHTML = catLoader('洗牌中…');
 load();
 </script>
 </body>
