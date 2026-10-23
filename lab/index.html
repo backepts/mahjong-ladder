@@ -431,7 +431,7 @@ function renderPay() {
   const info = PAY.res && PAY.res.info;
   const acct = info ? `<div style="margin-top:12px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:left">
       <div style="font-size:12px;color:var(--sub)">${esc(info.bank || '')}</div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span class="num" style="flex:1;font-size:16px;color:var(--white);word-break:break-all">${esc(info.account)}</span><button type="button" class="btn pri" id="pCopy">${PAY.copied ? '已複製' : '複製帳號'}</button></div></div>` : '';
+      <div style="display:flex;align-items:center;gap:8px;margin-top:2px"><span style="flex:1;font-size:17px;font-weight:500;color:var(--white);letter-spacing:1px;font-variant-numeric:tabular-nums;word-break:break-all">${esc(info.account)}</span><button type="button" class="btn pri" id="pCopy">${PAY.copied ? '已複製' : '複製帳號'}</button></div></div>` : '';
   if (PAY.res && PAY.res.has) h = `<div style="font-size:17px;font-weight:700;color:var(--white);margin-bottom:12px">付給 ${n}</div>${PAY.res.img ? `<img src="${PAY.res.img}" alt="${n} 的付款碼"><div class="hint" style="margin-top:10px">用銀行 App 掃這個碼轉帳</div>` : ''}${acct}${close}`;
   else if (PAY.res) h = `<div style="font-size:17px;font-weight:700;color:var(--white);margin-bottom:8px">${n}</div><div style="font-size:13px;color:var(--sub)">還沒有提供付款碼</div>${close}`;
   else if (PAY.busy) h = `<div style="font-size:14px;color:var(--sub);padding:20px 0">讀取付款碼中…</div>${close}`;
