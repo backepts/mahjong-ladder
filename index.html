@@ -135,11 +135,14 @@ function build(raw) {
   };
 }
 
-function tierOf(i, n) {
-  if (i === 0) return ['雀王', '#facc15', '#3b2f00'];
-  if (i === n - 1 && n > 1) return ['慈善家', '#fb7185', '#4a0d1a'];
-  if (i < 3) return ['鑽石', '#7dd3fc', '#0b2a3d'];
-  return ['白銀', '#a5a3c9', '#25233f'];
+// 第一名、最後一名各一人；中間看總輸贏：贏 3,000 以上鑽石、贏不到 3,000（含打平）白銀、輸 3,000 以內銅牌仔、輸超過 3,000 鐵牌仔
+function tierOf(i, n, total) {
+  if (i === 0) return ['至尊雀王', '#facc15', '#3b2f00'];
+  if (i === n - 1 && n > 1) return ['地獄倒霉鬼', '#fb7185', '#4a0d1a'];
+  if (total >= 3000) return ['鑽石', '#7dd3fc', '#0b2a3d'];
+  if (total >= 0) return ['白銀', '#d4d4e8', '#2e2c4a'];
+  if (total >= -3000) return ['銅牌仔', '#e0a46e', '#3a2412'];
+  return ['鐵牌仔', '#94a3b8', '#1e2533'];
 }
 
 function renderBoard() {
@@ -148,7 +151,7 @@ function renderBoard() {
   if (!sel || !D.active.find(p => p.name === sel)) sel = D.active[0].name;
   const n = D.active.length;
   const lb = D.active.map((p, i) => {
-    const [tn, c, bg] = tierOf(i, n);
+    const [tn, c, bg] = tierOf(i, n, p.total);
     return `<button type="button" class="row rise ${p.name === sel ? 'on' : ''}" style="animation-delay:${i * 40}ms" data-name="${esc(p.name)}">
       <div class="rk num ${i === 0 ? 'first' : ''}">${i === 0 ? '♛' : i + 1}</div>
       <div class="who"><b>${esc(p.name)}</b><span class="tier" style="background:${bg};color:${c}">${tn}</span></div>
