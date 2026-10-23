@@ -31,5 +31,5 @@ A 欄      │ 玩家名稱；空白列略過
 ## 目前進度
 
 - 做到哪：已上線 https://backepts.github.io/mahjong-ladder/ （repo backepts/mahjong-ladder，main 分支根目錄）；線上數字已驗證
-- 下一步：無；改版改 index.html → commit → push 即自動更新（約 1 分鐘）
-- 等 Beck 決定：無
+- 下一步：Beck 還要改版（內容待她提出）；改 index.html → commit → push 即自動更新（約 1 分鐘）
+- 等 Beck 決定：要改哪些地方
