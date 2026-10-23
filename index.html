@@ -81,6 +81,16 @@ footer{margin-top:28px;text-align:center;font-size:11px;color:var(--dim);line-he
 footer a{color:var(--sub)}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .rise{animation:rise .35s ease both}
+/* 戰況回顧 */
+.flt{font-size:12px;color:var(--sub);margin:16px 2px 6px}
+.rnav{display:flex;align-items:center;justify-content:space-between;margin:16px 0 10px}
+.nb{width:40px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--white);font:inherit;font-size:18px;cursor:pointer}
+.stage{display:grid;grid-template-columns:88px minmax(0,1fr) 88px;gap:6px;align-items:center;justify-items:center;touch-action:pan-y}
+.seat{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
+.seat b{font-size:13px;font-weight:500;color:var(--white);max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seat .num{font-size:14px;font-weight:700}
+.felt{width:100%;max-width:160px;aspect-ratio:1;background:#1e6b4f;border:6px solid #6b3f1f;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
+.extra{display:flex;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -98,7 +108,9 @@ footer a{color:var(--sub)}
     <span id="meta">讀取中…</span>
     <span><button class="btn" id="reload" type="button">重新整理</button> <button class="btn pri" id="toEntry" type="button">記帳</button></span>
   </div>
+  <div class="tabs" id="views"><button type="button" class="tab on" data-v="board">排行榜</button><button type="button" class="tab" data-v="replay">戰況回顧</button></div>
   <main id="board"><div class="msg">洗牌中…</div></main>
+  <main id="replay" hidden></main>
   <main id="entry" hidden></main>
   <footer>番仔碼頭聯盟・每次打開都讀最新資料<br>圖示插畫：<a href="https://jp.pinterest.com/pin/826480969128407920/" target="_blank" rel="noopener">DUST FISH</a></footer>
 </div>
@@ -215,6 +227,122 @@ function renderCard() {
     <div class="days">${days}</div>`;
 }
 
+// ---------- 戰況回顧 ----------
+// 像素小人：每格一個字母對應一種顏色；造型名稱存在主表「玩家」分頁 C 欄，空白就依名單順序自動配基本款
+const FACE = ['.SSESSESS.', '.SSSSSSSS.', '..SSMMSS..', '...SSSS...'];
+const MAN = ['..BBBBBB..', '.BBBBBBBB.', '.SBBBBBBS.', '.SBBBBBBS.', '..LL..LL..'];
+const GIRL = ['..BBBBBB..', '.BBBBBBBB.', '.SBBBBBBS.', '.BBBBBBBB.', '..SS..SS..'];
+const SPRITES = {
+  '男短髮': { rows: ['..HHHHHH..', '.HHHHHHHH.', '.HSSSSSSH.', ...FACE, ...MAN] },
+  '男刺蝟頭': { rows: ['.H.H.H.H..', 'HHHHHHHHHH', '.HSSSSSSH.', ...FACE, ...MAN] },
+  '光頭': { rows: ['..........', '..SSSSSS..', '.SWSSSSSS.', ...FACE, ...MAN] },
+  '女長髮': { rows: ['..HHHHHH..', '.HHHHHHHH.', 'HHSSSSSSHH', 'HSSESSESSH', 'HSSSSSSSSH', 'HHSSMMSSHH', 'HH.SSSS.HH', 'HHBBBBBBHH', 'HBBBBBBBBH', '.SBBBBBBS.', '.BBBBBBBB.', '..SS..SS..'] },
+  '女短髮': { rows: ['..HHHHHH..', '.HHHHHHHH.', 'HHSSSSSSHH', 'HSSESSESSH', 'HSSSSSSSSH', 'HHSSMMSSHH', '...SSSS...', ...GIRL] },
+  '女馬尾': { rows: ['..HHHHHH..', '.HHHHHHHHH', '.HSSSSSSHH', '.SSESSESSH', '.SSSSSSSSH', '..SSMMSS.H', '...SSSS...', ...GIRL] },
+  '口罩男': { rows: ['..HHHHHH..', '.HHHHHHHH.', '.HSSSSSSH.', '.SSESSESS.', 'KKKKKKKKKK', '.SKKKKKKS.', '...KKKK...', ...MAN], fix: { K: '#111111' } },
+  '企鵝': { rows: ['...KKKKPP.', '..KKKKKKPP', '.KKWWWWKK.', '.KWEWWEWK.', '.KCWOOWCK.', '.KWWWWWWK.', 'KKWWWWWWKK', 'KKWWWWWWKK', 'K.WWWWWW.K', '.KWWWWWWK.', '..KWWWWK..', '..OO..OO..'], fix: { K: '#1f2937', W: '#f8fafc', O: '#f59e0b', P: '#f472b6', C: '#fda4af' } },
+  '哥布林': { rows: ['....HHHH....', '...SSSSSS...', 'S..SSSSSS..S', 'SSSSYSSYSSSS', '.SSSSSSSSSS.', '...SMWWMS...', '....SSSS....', '...BBBBBB...', '..BBBBBBBB..', '..SBBBBBBS..', '..SBBBBBBS..', '...LL..LL...'], fix: { S: '#7cb342', H: '#33691e', M: '#1a1a2e', W: '#fff7e6', Y: '#facc15', B: '#a16207' } },
+  '綠巨人': { rows: ['............', 'T..SSSSSS..T', 'TSSSSSSSSSST', '.SSKKSSKKSS.', '.SSESSSSESS.', '.SSSSNNSSSS.', '..SSMMMMSS..', '...SSSSSS...', '.VVWWWWWWVV.', 'VVVWWWWWWVVV', 'SSVWWWWWWVSS', '..LLL..LLL..'], fix: { S: '#9ccc3c', T: '#8bb82f', K: '#3f4d16', N: '#7fa82a', M: '#4a2a12', V: '#6b4423', W: '#efe6cf', L: '#3b2f22' } },
+  '高爾夫女': { rows: ['..WWWWWW....', '.WWWWWWWWW..', '.HSSSSSSHH..', '.SSESSESSH..', '.SSSSSSSSH..', '..SSMMSS.H..', '...SSSS.....', '..BWBBWB....', '.BBBBBBBB...', '.SBBBBBBSG..', '.KKKKKKKK.G.', '..SS..SS..GG'], fix: { W: '#f8fafc', H: '#7a2e2e', B: '#f472b6', K: '#f1f5f9', G: '#94a3b8' } },
+  '高爾夫': { rows: ['..WWWWWW....', '.WWWWWWWWW..', '.HSSSSSSH...', '.SSESSESS...', '.SSSSSSSS...', '..SSMMSS....', '...SSSS.....', '..BWBBWB....', '.BBBBBBBB...', '.SBBBBBBSG..', '.SBBBBBBS.G.', '..LL..LL..GG'], fix: { W: '#f8fafc', B: '#22c55e', L: '#f1f5f9', G: '#94a3b8' } }
+};
+const BASIC = ['男短髮', '女長髮', '男刺蝟頭', '女短髮', '女馬尾', '光頭'];
+const HAIR = ['#2b1d14', '#5a3825', '#c9a14a', '#7a2e2e', '#3b3b6b', '#d8d8e0'];
+const SHIRT = ['#a78bfa', '#5eead4', '#fb7185', '#facc15', '#60a5fa', '#f97316', '#34d399'];
+const SKIN = ['#f5d0a9', '#e8b48a', '#c98b5e'];
+const CROWN = [[1, 0], [3, 0], [5, 0], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1]];
+
+// mood：1 = 當桌最贏（戴王冠）、-1 = 當桌最輸（流眼淚）。顏色依名單順序錯開，同款造型的人不會撞色
+function avatar(name, mood) {
+  const i = Math.max(RAW.players.indexOf(name), 0);
+  const style = (RAW.styles && RAW.styles[name]) || BASIC[i % BASIC.length];
+  const sp = SPRITES[style] || SPRITES['男短髮'];
+  const c = Object.assign({ H: HAIR[i % HAIR.length], S: SKIN[i % SKIN.length], B: SHIRT[i % SHIRT.length], E: '#1a1a2e', M: mood < 0 ? '#7a2e2e' : '#c2410c', L: '#2a2660', W: '#fff7e6' }, sp.fix);
+  const w = sp.rows[0].length, ox = Math.floor((12 - w) / 2) + 1;
+  let o = '';
+  if (mood > 0) CROWN.forEach(([x, y]) => o += `<rect x="${ox + Math.floor(w / 2) - 3 + x}" y="${y}" width="1" height="1" fill="#facc15"/>`);
+  const eyes = [];
+  sp.rows.forEach((r, y) => [...r].forEach((ch, x) => {
+    if (ch === '.') return;
+    o += `<rect x="${ox + x}" y="${y + 2}" width="1" height="1" fill="${c[ch]}"/>`;
+    if ('EYR'.includes(ch)) eyes.push([ox + x, y + 2]);
+  }));
+  // 輸家：每隻眼睛下面流一道眼淚
+  if (mood < 0) eyes.forEach(([x, y]) => o += `<rect x="${x}" y="${y + 1}" width="1" height="2" fill="#38bdf8"/><rect x="${x}" y="${y + 3}" width="1" height="1" fill="#7dd3fc"/>`);
+  return `<svg width="56" height="56" viewBox="0 0 14 14" shape-rendering="crispEdges" aria-hidden="true">${o}</svg>`;
+}
+
+const RP = { date: 'all', sel: new Set(), i: 0 };
+
+function replayList() {
+  // 最新的桌排最前面
+  return D.sessions.slice().reverse().filter(s =>
+    (RP.date === 'all' || s.date === RP.date) && [...RP.sel].every(n => s.results.some(r => r.name === n)));
+}
+
+function renderReplay() {
+  const app = $('replay');
+  if (!D.sessions.length) { app.innerHTML = '<div class="msg">還沒有任何對局紀錄</div>'; return; }
+  const dates = [...new Set(D.sessions.map(s => s.date))].reverse();
+  const names = RAW.players.filter(n => D.sessions.some(s => s.results.some(r => r.name === n)));
+  const L = replayList();
+  RP.i = Math.min(RP.i, Math.max(L.length - 1, 0));
+  const s = L[RP.i];
+  let table = '<div class="msg">沒有符合的牌桌，換個條件試試</div>';
+  if (s) {
+    const amts = s.results.map(r => r.amt), best = Math.max(...amts), worst = Math.min(...amts);
+    const seat = r => !r ? '<div></div>' : `<div class="seat">${avatar(r.name, best === worst ? 0 : r.amt === best ? 1 : r.amt === worst ? -1 : 0)}<b>${esc(r.name)}</b><span class="num ${cls(r.amt)}">${fmt(r.amt)}</span></div>`;
+    const [n, e, so, w, ...rest] = s.results;
+    table = `<div class="stage" id="stage">
+      <div></div>${seat(n)}<div></div>
+      ${seat(w)}<div class="felt"><div style="font-size:18px;font-weight:700;color:#e8ffe9">${esc(s.label)}</div><div style="font-size:12px;color:#bde8cf">${s.rounds} 將</div><div style="font-size:12px;color:var(--gold)">莊家抽 ${s.house.toLocaleString()}</div></div>${seat(e)}
+      <div></div>${seat(so)}<div></div>
+    </div>${rest.length ? `<div class="extra">${rest.map(seat).join('')}</div>` : ''}`;
+  }
+  app.innerHTML = `
+    <div class="flt">日期</div>
+    <select class="in" id="rDate" style="font-size:14px"><option value="all">全部日期</option>${dates.map(d => `<option value="${d}" ${RP.date === d ? 'selected' : ''}>${shortDate(d)}</option>`).join('')}</select>
+    <div class="flt">人員（可多選，選兩人以上＝只看他們同桌的）</div>
+    <div class="chips">${names.map(n => `<button type="button" class="pc ${RP.sel.has(n) ? 'on' : ''}" data-p="${esc(n)}">${esc(n)}</button>`).join('')}</div>
+    <div class="rnav">
+      <button type="button" class="nb" id="rPrev" aria-label="上一桌">‹</button>
+      <div style="text-align:center"><div style="font-size:16px;font-weight:700;color:var(--white)">${s ? esc(s.label) : '—'}</div><div style="font-size:12px;color:var(--sub)">${L.length ? `第 ${RP.i + 1} 桌／符合 ${L.length} 桌` : '符合 0 桌'}</div></div>
+      <button type="button" class="nb" id="rNext" aria-label="下一桌">›</button>
+    </div>
+    ${table}
+    <div class="hint" style="text-align:center;margin-top:14px">王冠＝當桌最贏　眼淚＝當桌最輸　左右滑動也能換桌</div>`;
+
+  $('rDate').onchange = e => { RP.date = e.target.value; RP.i = 0; renderReplay(); };
+  app.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
+    const n = b.dataset.p;
+    RP.sel.has(n) ? RP.sel.delete(n) : RP.sel.add(n);
+    RP.i = 0; renderReplay();
+  });
+  const go = d => { if (L.length) { RP.i = (RP.i + d + L.length) % L.length; renderReplay(); } };
+  $('rPrev').onclick = () => go(-1);
+  $('rNext').onclick = () => go(1);
+  const st = $('stage');
+  if (st) {
+    let x0 = null;
+    st.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+    st.addEventListener('touchend', e => {
+      if (x0 === null) return;
+      const dx = e.changedTouches[0].clientX - x0; x0 = null;
+      if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+    });
+  }
+}
+
+let view = 'board';
+function showView(v) {
+  view = v;
+  $('board').hidden = v !== 'board';
+  $('replay').hidden = v !== 'replay';
+  $('tagline').hidden = v !== 'board';
+  $('title').innerHTML = (v === 'replay' ? '戰況回顧' : '天梯排行榜') + '<span class="season num">S1</span>';
+  document.querySelectorAll('#views .tab').forEach(t => t.classList.toggle('on', t.dataset.v === v));
+}
+
 async function load() {
   $('meta').textContent = '讀取中…';
   try {
@@ -225,6 +353,7 @@ async function load() {
     D = build(json);
     $('meta').textContent = `資料更新至 ${D.last}・共 ${D.sessions.length} 組`;
     renderBoard();
+    renderReplay();
     return true;
   } catch (e) {
     $('meta').textContent = '讀取失敗';
@@ -247,12 +376,14 @@ function newForm(mode) {
 }
 
 function showEntry(on) {
-  $('board').hidden = on;
   $('entry').hidden = !on;
-  $('toEntry').textContent = on ? '回排行榜' : '記帳';
-  $('tagline').hidden = on;
-  $('title').innerHTML = (on ? '記帳' : '天梯排行榜') + '<span class="season num">S1</span>';
-  if (on) { F = newForm('new'); renderEntry(); }
+  $('views').hidden = on;
+  $('toEntry').textContent = on ? (view === 'replay' ? '回戰況回顧' : '回排行榜') : '記帳';
+  if (on) {
+    $('board').hidden = $('replay').hidden = $('tagline').hidden = true;
+    $('title').innerHTML = '記帳<span class="season num">S1</span>';
+    F = newForm('new'); renderEntry();
+  } else showView(view);
   window.scrollTo(0, 0);
 }
 
@@ -438,6 +569,7 @@ async function submit() {
   }
 }
 
+document.querySelectorAll('#views .tab').forEach(t => t.addEventListener('click', () => showView(t.dataset.v)));
 $('reload').addEventListener('click', async () => { await load(); if (!$('entry').hidden) showEntry(true); });
 $('toEntry').addEventListener('click', () => {
   if (!RAW) return;

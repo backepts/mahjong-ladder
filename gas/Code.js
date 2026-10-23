@@ -10,10 +10,15 @@ var SHEET = {
 var HEADERS = {
   results: ['場次ID', '日期', '組別', '玩家', '輸贏', '寫入時間'],
   house: ['場次ID', '日期', '組別', '每將', '將數', '抽頭', '寫入時間'],
-  players: ['玩家', '加入日期'],
+  players: ['玩家', '加入日期', '造型'],
   log: ['時間', '動作', '場次ID', '場次', '記帳人', '改前', '改後']
 };
 var INITIAL_PLAYERS = ['Congo', 'Rick', 'Yuan', 'PP', 'Joy', 'Poting', 'Ralph', 'Amy', 'Ariel', 'Albee', 'Ivy'];
+// 戰況回顧的像素造型（玩家分頁 C 欄）；第一次讀到沒有 C 欄表頭時填入，之後直接改那一格就好，空白＝網頁自動配
+var INITIAL_STYLES = {
+  Congo: '光頭', Rick: '綠巨人', Yuan: '企鵝', PP: '口罩男', Joy: '女馬尾', Poting: '高爾夫',
+  Ralph: '哥布林', Amy: '女長髮', Ariel: '女長髮', Albee: '女長髮', Ivy: '女長髮'
+};
 
 function ss_() {
   return SpreadsheetApp.getActiveSpreadsheet();
@@ -32,7 +37,10 @@ function rows_(key) {
 }
 
 function readState_() {
-  var players = rows_('players').map(function (r) { return String(r[0]).trim(); }).filter(String);
+  var prows = rows_('players').filter(function (r) { return String(r[0]).trim(); });
+  var players = prows.map(function (r) { return String(r[0]).trim(); });
+  var styles = {};
+  prows.forEach(function (r) { if (r[2] && String(r[2]).trim()) styles[String(r[0]).trim()] = String(r[2]).trim(); });
   var byId = {};
   rows_('house').forEach(function (r) {
     var id = String(r[0]);
@@ -43,7 +51,7 @@ function readState_() {
     if (s) s.results.push({ name: String(r[3]), amt: Number(r[4]) });
   });
   var sessions = labelSessions(sortSessions(Object.keys(byId).map(function (k) { return byId[k]; })));
-  return { players: players, sessions: sessions };
+  return { players: players, styles: styles, sessions: sessions };
 }
 
 function json_(obj) {
@@ -55,6 +63,7 @@ function ensureFormat_(st) {
   var ss = ss_();
   if (ss.getSpreadsheetTimeZone() !== 'Asia/Taipei') ss.setSpreadsheetTimeZone('Asia/Taipei');
   fixTimestamps_();
+  seedStyles_();
   var log = sheet_('log');
   if (log.getRange('D1').getNumberFormat() === '@') return;
   log.getRange('D:D').setNumberFormat('@');
@@ -66,6 +75,33 @@ function ensureFormat_(st) {
     log.getRange(2, 4, n, 1).setValues(ids.map(function (r) { return [labels[String(r[0])] || String(r[0])]; }));
   }
   writeOverview_(st || readState_());
+}
+
+var STYLES = ['男短髮', '男刺蝟頭', '光頭', '女長髮', '女短髮', '女馬尾', '口罩男', '企鵝', '哥布林', '綠巨人', '高爾夫', '高爾夫女'];
+
+// 改某人的造型（Beck 跟 Claude 說要換時用）；空字串＝改回自動配
+function setStyle_(payload) {
+  var name = String(payload.name || '').trim(), style = String(payload.style || '').trim();
+  if (style && STYLES.indexOf(style) < 0) return { ok: false, error: '不認得的造型：' + style };
+  var ps = sheet_('players'), n = ps.getLastRow() - 1;
+  var names = n > 0 ? ps.getRange(2, 1, n, 1).getValues().map(function (r) { return String(r[0]).trim(); }) : [];
+  var i = names.indexOf(name);
+  if (i < 0) return { ok: false, error: '找不到玩家：' + name };
+  var cell = ps.getRange(i + 2, 3), before = String(cell.getValue());
+  cell.setValue(style);
+  sheet_('log').appendRow([ts_(), '改造型', '', '', String(payload.by || ''), JSON.stringify({ name: name, style: before }), JSON.stringify({ name: name, style: style })]);
+  return { ok: true, name: name, style: style };
+}
+
+function seedStyles_() {
+  var ps = sheet_('players');
+  if (String(ps.getRange('C1').getValue()) === '造型') return;
+  ps.getRange('C1').setValue('造型').setFontWeight('bold');
+  var n = ps.getLastRow() - 1;
+  if (n > 0) {
+    var names = ps.getRange(2, 1, n, 1).getValues();
+    ps.getRange(2, 3, n, 1).setValues(names.map(function (r) { return [INITIAL_STYLES[String(r[0]).trim()] || '']; }));
+  }
 }
 
 // 寫入時間一律存台北時間文字，不受試算表時區影響
@@ -95,7 +131,7 @@ function doGet() {
   try {
     var st = readState_();
     ensureFormat_(st);
-    return json_({ ok: true, players: st.players, sessions: st.sessions });
+    return json_({ ok: true, players: st.players, styles: st.styles, sessions: st.sessions });
   } catch (err) {
     return json_({ ok: false, error: String(err.message || err) });
   }
@@ -106,6 +142,7 @@ function doPost(e) {
   try {
     lock.waitLock(20000);
     var payload = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    if (payload.action === 'style') return json_(setStyle_(payload));
     if (payload.action !== 'save') return json_({ ok: false, error: '不認得的動作' });
     var res = saveSession_(payload);
     return json_(res);

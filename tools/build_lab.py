@@ -25,7 +25,7 @@ MOCK = """<script src="core.js"></script>
       const r = await realFetch(String(url).split('?')[0] + '?t=' + Date.now(), { cache: 'no-store' });
       const j = await r.json();
       if (!j.ok) return reply(j);
-      state = { players: j.players, sessions: j.sessions };
+      state = { players: j.players, styles: j.styles || {}, sessions: j.sessions };
     }
     if (opt && opt.method === 'POST') {
       const prep = prepareSave(JSON.parse(opt.body), JSON.parse(JSON.stringify(state)));
@@ -35,7 +35,7 @@ MOCK = """<script src="core.js"></script>
       labelSessions(sortSessions(state.sessions));
       return reply({ ok: true, id: prep.session.id, label: prep.session.label + '（LAB 模擬）' });
     }
-    return reply({ ok: true, players: state.players.slice(), sessions: JSON.parse(JSON.stringify(state.sessions)) });
+    return reply({ ok: true, players: state.players.slice(), styles: state.styles, sessions: JSON.parse(JSON.stringify(state.sessions)) });
   };
 })();
 </script>
