@@ -252,7 +252,7 @@ const SHIRT = ['#a78bfa', '#5eead4', '#fb7185', '#facc15', '#60a5fa', '#f97316',
 const SKIN = ['#f5d0a9', '#e8b48a', '#c98b5e'];
 const CROWN = [[1, 0], [3, 0], [5, 0], [1, 1], [2, 1], [3, 1], [4, 1], [5, 1]];
 
-// mood：1 = 當桌最贏（戴王冠）、-1 = 當桌最輸（冒汗）。顏色依名單順序錯開，同款造型的人不會撞色
+// mood：1 = 當桌最贏（戴王冠）、-1 = 當桌最輸（流眼淚）。顏色依名單順序錯開，同款造型的人不會撞色
 function avatar(name, mood) {
   const i = Math.max(RAW.players.indexOf(name), 0);
   const style = (RAW.styles && RAW.styles[name]) || BASIC[i % BASIC.length];
@@ -261,8 +261,14 @@ function avatar(name, mood) {
   const w = sp.rows[0].length, ox = Math.floor((12 - w) / 2) + 1;
   let o = '';
   if (mood > 0) CROWN.forEach(([x, y]) => o += `<rect x="${ox + Math.floor(w / 2) - 3 + x}" y="${y}" width="1" height="1" fill="#facc15"/>`);
-  sp.rows.forEach((r, y) => [...r].forEach((ch, x) => { if (ch !== '.') o += `<rect x="${ox + x}" y="${y + 2}" width="1" height="1" fill="${c[ch]}"/>`; }));
-  if (mood < 0) o += `<rect x="${ox + w}" y="4" width="1" height="1" fill="#60a5fa"/><rect x="${ox + w}" y="5" width="1" height="2" fill="#93c5fd"/>`;
+  const eyes = [];
+  sp.rows.forEach((r, y) => [...r].forEach((ch, x) => {
+    if (ch === '.') return;
+    o += `<rect x="${ox + x}" y="${y + 2}" width="1" height="1" fill="${c[ch]}"/>`;
+    if ('EYR'.includes(ch)) eyes.push([ox + x, y + 2]);
+  }));
+  // 輸家：每隻眼睛下面流一道眼淚
+  if (mood < 0) eyes.forEach(([x, y]) => o += `<rect x="${x}" y="${y + 1}" width="1" height="2" fill="#38bdf8"/><rect x="${x}" y="${y + 3}" width="1" height="1" fill="#7dd3fc"/>`);
   return `<svg width="56" height="56" viewBox="0 0 14 14" shape-rendering="crispEdges" aria-hidden="true">${o}</svg>`;
 }
 
@@ -304,7 +310,7 @@ function renderReplay() {
       <button type="button" class="nb" id="rNext" aria-label="下一桌">›</button>
     </div>
     ${table}
-    <div class="hint" style="text-align:center;margin-top:14px">王冠＝當桌最贏　汗滴＝當桌最輸　左右滑動也能換桌</div>`;
+    <div class="hint" style="text-align:center;margin-top:14px">王冠＝當桌最贏　眼淚＝當桌最輸　左右滑動也能換桌</div>`;
 
   $('rDate').onchange = e => { RP.date = e.target.value; RP.i = 0; renderReplay(); };
   app.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
