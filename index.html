@@ -324,7 +324,7 @@ function renderReplay() {
       <button type="button" class="nb" id="rNext" aria-label="下一桌">›</button>
     </div>
     ${table}
-    <div class="hint" style="text-align:center;margin-top:14px">王冠＝當桌最贏　眼淚＝當桌最輸　左右滑動也能換桌<br>點小夥伴看他的付款碼</div>`;
+    <div class="hint" style="text-align:center;margin-top:14px">點小夥伴看他的付款碼</div>`;
 
   $('rDate').onchange = e => { RP.date = e.target.value; RP.i = 0; renderReplay(); };
   app.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
