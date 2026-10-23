@@ -77,6 +77,22 @@ function ensureFormat_(st) {
   writeOverview_(st || readState_());
 }
 
+var STYLES = ['男短髮', '男刺蝟頭', '光頭', '女長髮', '女短髮', '女馬尾', '口罩男', '企鵝', '哥布林', '綠巨人', '高爾夫', '高爾夫女'];
+
+// 改某人的造型（Beck 跟 Claude 說要換時用）；空字串＝改回自動配
+function setStyle_(payload) {
+  var name = String(payload.name || '').trim(), style = String(payload.style || '').trim();
+  if (style && STYLES.indexOf(style) < 0) return { ok: false, error: '不認得的造型：' + style };
+  var ps = sheet_('players'), n = ps.getLastRow() - 1;
+  var names = n > 0 ? ps.getRange(2, 1, n, 1).getValues().map(function (r) { return String(r[0]).trim(); }) : [];
+  var i = names.indexOf(name);
+  if (i < 0) return { ok: false, error: '找不到玩家：' + name };
+  var cell = ps.getRange(i + 2, 3), before = String(cell.getValue());
+  cell.setValue(style);
+  sheet_('log').appendRow([ts_(), '改造型', '', '', String(payload.by || ''), JSON.stringify({ name: name, style: before }), JSON.stringify({ name: name, style: style })]);
+  return { ok: true, name: name, style: style };
+}
+
 function seedStyles_() {
   var ps = sheet_('players');
   if (String(ps.getRange('C1').getValue()) === '造型') return;
@@ -126,6 +142,7 @@ function doPost(e) {
   try {
     lock.waitLock(20000);
     var payload = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    if (payload.action === 'style') return json_(setStyle_(payload));
     if (payload.action !== 'save') return json_({ ok: false, error: '不認得的動作' });
     var res = saveSession_(payload);
     return json_(res);
