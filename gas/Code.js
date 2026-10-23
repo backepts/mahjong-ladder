@@ -50,9 +50,51 @@ function json_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
+// 時區固定台北；修改紀錄的「場次」欄（10/21 這種）存純文字，避免被 Sheets 自動轉成日期。已修好就只花兩次讀取
+function ensureFormat_(st) {
+  var ss = ss_();
+  if (ss.getSpreadsheetTimeZone() !== 'Asia/Taipei') ss.setSpreadsheetTimeZone('Asia/Taipei');
+  fixTimestamps_();
+  var log = sheet_('log');
+  if (log.getRange('D1').getNumberFormat() === '@') return;
+  log.getRange('D:D').setNumberFormat('@');
+  var n = log.getLastRow() - 1;
+  if (n > 0) {
+    var labels = {};
+    (st || readState_()).sessions.forEach(function (s) { labels[s.id] = s.label; });
+    var ids = log.getRange(2, 3, n, 1).getValues();
+    log.getRange(2, 4, n, 1).setValues(ids.map(function (r) { return [labels[String(r[0])] || String(r[0])]; }));
+  }
+  writeOverview_(st || readState_());
+}
+
+// 寫入時間一律存台北時間文字，不受試算表時區影響
+function ts_(d) {
+  return Utilities.formatDate(d || new Date(), 'Asia/Taipei', 'yyyy-MM-dd HH:mm:ss');
+}
+
+// 一次性：2026-10-23 首批資料寫入時試算表時區還是美西（UTC-7），留下的是美西牆上時間的日期格。
+// 時區改成台北後讀回來會少 15 小時，所以轉成文字時補回 15 小時；之後寫入都是文字，不會再進來
+var TS_COLS = { results: 'F', house: 'G', log: 'A' };
+function fixTimestamps_() {
+  Object.keys(TS_COLS).forEach(function (key) {
+    var sh = sheet_(key), col = TS_COLS[key];
+    if (sh.getRange(col + '1').getNumberFormat() === '@') return;
+    var n = sh.getLastRow() - 1;
+    var vals = n > 0 ? sh.getRange(col + '2:' + col + (n + 1)).getValues() : [];
+    sh.getRange(col + ':' + col).setNumberFormat('@');
+    if (n > 0) {
+      sh.getRange(col + '2:' + col + (n + 1)).setValues(vals.map(function (r) {
+        return [r[0] instanceof Date ? ts_(new Date(r[0].getTime() + 15 * 3600 * 1000)) : r[0]];
+      }));
+    }
+  });
+}
+
 function doGet() {
   try {
     var st = readState_();
+    ensureFormat_(st);
     return json_({ ok: true, players: st.players, sessions: st.sessions });
   } catch (err) {
     return json_({ ok: false, error: String(err.message || err) });
@@ -76,9 +118,10 @@ function doPost(e) {
 
 function saveSession_(payload) {
   var st = readState_();
+  ensureFormat_(st);
   var prep = prepareSave(payload, st);
   if (prep.error) return { ok: false, error: prep.error };
-  var s = prep.session, now = new Date();
+  var s = prep.session, now = new Date(), stamp = ts_(now);
 
   if (prep.before) deleteSessionRows_(s.id);
 
@@ -91,14 +134,14 @@ function saveSession_(payload) {
 
   var rs = sheet_('results');
   rs.getRange(rs.getLastRow() + 1, 1, s.results.length, 6)
-    .setValues(s.results.map(function (r) { return [s.id, s.date, s.group, r.name, r.amt, now]; }));
+    .setValues(s.results.map(function (r) { return [s.id, s.date, s.group, r.name, r.amt, stamp]; }));
   var hs = sheet_('house');
-  hs.getRange(hs.getLastRow() + 1, 1, 1, 7).setValues([[s.id, s.date, s.group, s.per, s.rounds, s.house, now]]);
+  hs.getRange(hs.getLastRow() + 1, 1, 1, 7).setValues([[s.id, s.date, s.group, s.per, s.rounds, s.house, stamp]]);
 
   var after = readState_();
   var saved = after.sessions.filter(function (x) { return x.id === s.id; })[0];
   sheet_('log').appendRow([
-    now, prep.before ? '修改' : '新增', s.id, saved.label, prep.by,
+    stamp, prep.before ? '修改' : '新增', s.id, saved.label, prep.by,
     prep.before ? JSON.stringify(stripSession_(prep.before)) : '',
     JSON.stringify(stripSession_(saved))
   ]);
@@ -122,6 +165,7 @@ function writeOverview_(st) {
   var grid = buildOverview(st.players, st.sessions);
   var sh = ss_().getSheetByName(SHEET.overview) || ss_().insertSheet(SHEET.overview);
   sh.clearContents();
+  sh.getRange(1, 1, 1, sh.getMaxColumns()).setNumberFormat('@');
   sh.getRange(1, 1, grid.length, grid[0].length).setValues(grid);
   sh.setFrozenRows(1);
   sh.setFrozenColumns(1);
@@ -144,6 +188,8 @@ function setup() {
     if (key === 'results' || key === 'house') sh.getRange('A:C').setNumberFormat('@');
     if (key === 'players') sh.getRange('B:B').setNumberFormat('@');
   });
+  ss.getSheetByName(SHEET.log).getRange('D:D').setNumberFormat('@');
+  ss.setSpreadsheetTimeZone('Asia/Taipei');
   var ps = ss.getSheetByName(SHEET.players);
   if (ps.getLastRow() === 1) {
     ps.getRange(2, 1, INITIAL_PLAYERS.length, 2).setValues(INITIAL_PLAYERS.map(function (n) { return [n, '2026-10-21']; }));

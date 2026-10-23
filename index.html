@@ -246,12 +246,19 @@ function allPlayers() {
   return [...RAW.players, ...F.extra.filter(n => !RAW.players.includes(n))];
 }
 
+const shortDate = date => { const p = date.split('-'); return Number(p[1]) + '/' + Number(p[2]); };
+
+// 新增時這組會叫什麼：這天第一組只有日期，第二組起加 A／B…
+function newLabel() {
+  const n = RAW.sessions.filter(s => s.date === F.date).length;
+  return shortDate(F.date) + (n ? ' ' + String.fromCharCode(65 + n) + ' 組' : '');
+}
+
 function groupHint() {
   if (F.mode === 'edit') return F.id ? '改完送出會覆蓋這一組，改前的數字會留在修改紀錄' : '';
-  const same = RAW.sessions.filter(s => s.date === F.date);
-  if (!same.length) return '這天的第一組';
-  const g = String.fromCharCode(65 + same.length);
-  return `這天已經有 ${same.length} 組，這組會是 ${g} 組（表頭會變成「${F.date.slice(5).replace(/^0/, '').replace('-0', '/').replace('-', '/')} A／B…」）`;
+  const n = RAW.sessions.filter(s => s.date === F.date).length;
+  if (!n) return '這天的第一組';
+  return `這天已經有 ${n} 組，這組會是 ${String.fromCharCode(65 + n)} 組，原本的會自動改叫「${shortDate(F.date)} A」`;
 }
 
 function calc() {
@@ -333,7 +340,7 @@ function renderMsg() {
   if (F.err) { m.innerHTML = `<div class="err-t">${esc(F.err)}</div>`; return; }
   if (!F.confirming) { m.innerHTML = ''; return; }
   const c = calc();
-  const label = F.mode === 'edit' ? RAW.sessions.find(s => s.id === F.id).label : F.date;
+  const label = F.mode === 'edit' ? RAW.sessions.find(s => s.id === F.id).label : newLabel();
   m.innerHTML = `<div class="confirm">
     <div style="color:var(--white);font-weight:500">${F.mode === 'edit' ? '確定覆蓋' : '確定新增'}「${esc(label)}」？</div>
     ${F.picked.map(n => `${esc(n)} <span class="num ${cls(F.vals[n].v * F.vals[n].s)}">${fmt(F.vals[n].v * F.vals[n].s)}</span>`).join('、')}<br>

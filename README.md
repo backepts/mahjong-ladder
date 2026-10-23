@@ -1,43 +1,56 @@
 # 番仔麻將天梯
 
-麻將群組輸贏表的電競風手機前台。純靜態網頁，每次打開時直接讀 Google Sheet 最新資料，不存任何資料。
+麻將群組輸贏的電競風手機網頁：排行榜＋個人戰績卡＋莊家抽頭，以及前台記帳（新增／修改一組）。
 
-## 資料來源
-
-- Sheet：番仔輸贏表（擁有者 Ralph，「知道連結者可檢視」）
-  https://docs.google.com/spreadsheets/d/1GkPtdUNP4ofLWIJvZwTFeEUzuhIJA_1qoWf81SPkthI/edit#gid=0
-- 讀法：瀏覽器 fetch `export?format=csv&gid=0`（有 CORS，公開表才讀得到）
-- 不用 gviz：gviz 會把同欄的文字（莊家 `400*3=1200`）丟掉
-
-## 表格格式假設
+## 架構
 
 ```
-A1 = 日期 │ B1… = 每場日期（往右加）
-A 欄      │ 玩家名稱；空白列略過
-莊家 列   │ 「每將*將數=金額」或純數字；取等號後的數字當抽頭
+網頁 index.html（GitHub Pages）
+   │  GET 讀全部資料／POST 寫一組
+   ▼
+GAS Web App（Beck 個人 Gmail becktsai0708，任何人可呼叫）
+   │  綁定在主表上
+   ▼
+番仔麻將主表（Beck 個人 Gmail，不公開）
 ```
 
-## 計算規則
+- 網頁：https://backepts.github.io/mahjong-ladder/ （repo backepts/mahjong-ladder，main 分支根目錄）
+- 主表：https://docs.google.com/spreadsheets/d/1EkTD2nSQJb-I-TTKt-yWxXONxBiioeWF2vq6Nu9GPVY/edit
+- GAS 專案：https://script.google.com/d/1SUy_Le7j_IbDYdxhNI9aATm0th1dSoEKFDYyoAdUHYHGHNf9UGD8sMoJ/edit
+- Web App 部署 ID：AKfycbwabVzk4EyxWUyB7T08whKnhZ3GB05tgHKFNnR0R1JYz0rT2uCycPMPj9GjfypDN7O3oA（更新程式用 `-i` 部署到同一個 ID，網址不變）
+- clasp 一律帶 `-u personal`（個人帳號憑證；預設那組是公司帳號）
+- Ralph 的「番仔輸贏表」不再是資料來源，Beck 自己偶爾拿來人工核對
 
-- 累計輸贏＝每場數字直接相加（正＝贏），空白＝沒出賽
-- 排名只算有出賽的人；第 1 名「雀王」、2～3 名「鑽石」、最後一名「慈善家」、其餘「白銀」
-- 帳平檢查：每天「玩家輸贏合計＋莊家抽頭」應為 0，不為 0 會在莊家那天標「帳不平」
-- 非數字的格子不計入，畫面底部會列出是哪幾格
+## 主表分頁
+
+| 分頁 | 內容 |
+|---|---|
+| 對局紀錄 | 一筆一列：場次ID｜日期｜組別｜玩家｜輸贏｜寫入時間（唯一主資料） |
+| 抽頭 | 場次ID｜日期｜組別｜每將｜將數｜抽頭｜寫入時間 |
+| 玩家 | 名單順序＝總覽列順序；網頁加新人會追加在最後 |
+| 修改紀錄 | 時間｜新增／修改｜場次ID｜場次｜記帳人｜改前 JSON｜改後 JSON |
+| 總覽 | 每次寫入後由程式重畫，版型同 Ralph 表（人工看用，不要手改） |
+
+- 場次ID＝`日期#組別`（例 `2026-10-23#A`）。同一天第一組永遠是 A；顯示時一天只有一組就寫「10/23」，多組寫「10/23 A」「10/23 B」
+- 日期、組別、場次、寫入時間都存純文字（台北時間），避免 Sheets 自動轉日期／時區漂移
+
+## 規則
+
+- 帳平才能寫入：玩家輸贏合計＋抽頭（每將×將數）＝0，前台與後端各檢查一次
+- 至少 2 人、金額整數、名字不可重複／不可叫「莊家」「日期」、必須選「我是誰」
+- 修改＝整組覆蓋（日期組別不能改），改前內容留在修改紀錄，可照紀錄還原
+- 有網址就能寫（Beck 決定不設密碼）
 
 ## 檔案
 
-- `index.html` — 整個前台（HTML＋CSS＋JS 一檔）
+- `index.html` — 前台（排行榜＋記帳）
+- `gas/core.js` — 純邏輯（驗證、組別、標籤、總覽版型），`node test/core.test.js` 可本機測
+- `gas/Code.js` — 讀寫試算表、doGet/doPost、setup
+- `test/core.test.js` — core.js 單元測試
 
 ## 目前進度
 
-- 做到哪：看板已上線 https://backepts.github.io/mahjong-ladder/ （repo backepts/mahjong-ladder，main 分支根目錄）；正在規劃「前台記帳」功能，記帳畫面模擬圖已出
-- 記帳功能已定的需求（2026-10-23）：
-  - 後端＝Beck 個人 Gmail（becktsai0708）的 GAS；需 Ralph 把 becktsai0708@gmail.com 加為 Sheet 編輯者
-  - 有網址就能輸入（不設密碼）；一組一次整批送，帳平（玩家合計＋抽頭＝0）才能送出
-  - 同天多組＝一組一欄，表頭「10/23 A」「10/23 B」；只打一組時維持「10/23」
-  - 可在網頁修改某一組；每次寫入存一筆紀錄（誰／何時／改前／改後）到 Beck 帳號另一張表
-  - 網頁可加新玩家（插在最後一位玩家下面、莊家上面）
-  - 抽頭填將數，每將預設 400 可改，寫成「400*3=1200」
-- 下一步：Beck 確認記帳模擬圖 → 實作 GAS 後端＋前台記帳頁
-- 等 Beck 決定：記帳畫面 OK 嗎；去請 Ralph 開編輯權
-- 之後再做：「誰跟誰同組時的勝率」分析（一組一欄的資料就是為了這個）
+- 做到哪：主表＋後端已部署並匯入 10/21、10/22（排行數字與 Ralph 表一致）；記帳頁在 `entry` 分支本機驗證通過，**尚未上線**（main 還是舊版直接讀 Ralph 表）
+- 下一步：Beck 同意後 merge entry → main 並 push，網頁換成新版
+- 等 Beck 決定：上線
+- 之後再做：「誰跟誰同組時的勝率」分析
