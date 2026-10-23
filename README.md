@@ -51,7 +51,7 @@ GAS Web App（Beck 個人 Gmail becktsai0708，任何人可呼叫）
 
 ## 目前進度
 
-- 做到哪：付款碼已上線（點戰況回顧小夥伴→通關密語→QR code＋複製帳號）；後端 v8。密語在指令碼屬性 PAY_PASS，換密語用 action=setpass 帶 old；圖在私人資料夾「番仔碼頭付款碼」，帳號在主表「付款資料」分頁（Beck 自己填）
+- 做到哪：Rank｜戰況回顧｜紀錄保持人三分頁、像素頭像、付款碼都已上線；後端 v8
 - 下一步：無
 - 等 Beck 決定：無
 - 改版流程：改 index.html → `python3 tools/build_lab.py` → 把 lab/（＋新增的共用檔如 icons/）帶到 main 推上去給 Beck 看 → 同意才 merge 推 main（push main＝網頁立刻換版；每天 18:00 自動備份也會 push，改到一半一定開分支）
