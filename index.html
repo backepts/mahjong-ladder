@@ -206,9 +206,9 @@ function renderBoard() {
   app.innerHTML = `
     <div class="sec">總排行</div><div id="lb">${lb}</div>
     <div class="sec">個人戰績卡</div><div class="card" id="card"></div>
-    <div class="sec">莊家抽頭</div>
+    <div class="sec">東錢</div>
     <div class="grid3">
-      <div class="st"><small>累計抽頭</small><span class="num" style="color:var(--gold)">${hTotal.toLocaleString()}</span></div>
+      <div class="st"><small>累計東錢</small><span class="num" style="color:var(--gold)">${hTotal.toLocaleString()}</span></div>
       <div class="st"><small>總將數</small><span class="num">${hRounds}</span></div>
       <div class="st"><small>每將</small><span class="num">${pers.length === 1 ? pers[0] : '—'}</span></div>
     </div>
@@ -326,7 +326,7 @@ function renderReplay() {
     const [n, e, so, w, ...rest] = s.results;
     table = `<div class="stage" id="stage">
       <div></div>${seat(n)}<div></div>
-      ${seat(w)}<div class="felt"><div style="font-size:18px;font-weight:700;color:#e8ffe9">${esc(s.label)}</div><div style="font-size:12px;color:#bde8cf">${s.rounds} 將</div><div style="font-size:12px;color:var(--gold)">莊家抽 ${s.house.toLocaleString()}</div></div>${seat(e)}
+      ${seat(w)}<div class="felt"><div style="font-size:18px;font-weight:700;color:#e8ffe9">${esc(s.label)}</div><div style="font-size:12px;color:#bde8cf">${s.rounds} 將</div><div style="font-size:12px;color:var(--gold)">東錢 ${s.house.toLocaleString()}</div></div>${seat(e)}
       <div></div>${seat(so)}<div></div>
     </div>${rest.length ? `<div class="extra">${rest.map(seat).join('')}</div>` : ''}`;
   }
@@ -614,7 +614,7 @@ function renderEntry() {
         <input class="in num" type="number" inputmode="numeric" min="0" step="1" data-amt="${esc(n)}" value="${esc(v.v)}" placeholder="金額" style="width:120px"></div>`;
     }).join('') : '<div class="hint">先在上面選人</div>'}</div>
 
-    <div class="sec">莊家抽頭</div>
+    <div class="sec">東錢</div>
     <div style="display:flex;gap:6px;align-items:center">
       <input class="in num" type="number" inputmode="numeric" min="0" step="1" id="fRounds" value="${esc(F.rounds)}" placeholder="將數" style="flex:1">
       <span style="color:var(--sub);flex:none">將 ×</span>
@@ -639,7 +639,7 @@ function updateBal() {
   $('fHouse').textContent = c.house.toLocaleString();
   box.style.background = c.ok ? '#0f3b33' : '#3b1420';
   box.style.color = c.ok ? 'var(--win)' : 'var(--lose)';
-  box.innerHTML = `玩家合計 <span class="num">${fmt(c.sum)}</span>　＋　抽頭 <span class="num">${c.house.toLocaleString()}</span>　＝　<span class="num">${fmt(c.sum + c.house)}</span><br><b>${c.ok ? '帳平了，可以送出' : esc(c.reason)}</b>`;
+  box.innerHTML = `玩家合計 <span class="num">${fmt(c.sum)}</span>　＋　東錢 <span class="num">${c.house.toLocaleString()}</span>　＝　<span class="num">${fmt(c.sum + c.house)}</span><br><b>${c.ok ? '帳平了，可以送出' : esc(c.reason)}</b>`;
   const go = $('fGo');
   go.style.background = c.ok ? 'var(--accent)' : 'var(--line)';
   go.style.color = c.ok ? 'var(--accent-ink)' : 'var(--dim)';
@@ -656,7 +656,7 @@ function renderMsg() {
   m.innerHTML = `<div class="confirm">
     <div style="color:var(--white);font-weight:500">${F.mode === 'edit' ? '確定覆蓋' : '確定新增'}「${esc(label)}」？</div>
     ${F.picked.map(n => `${esc(n)} <span class="num ${cls(F.vals[n].v * F.vals[n].s)}">${fmt(F.vals[n].v * F.vals[n].s)}</span>`).join('、')}<br>
-    莊家 ${Number(F.per)}*${Number(F.rounds)}=${c.house}・記帳人 ${esc(F.by)}
+    東錢 ${Number(F.per)}*${Number(F.rounds)}=${c.house}・記帳人 ${esc(F.by)}
     <div style="display:flex;gap:6px;margin-top:10px">
       <button type="button" class="btn pri" id="fYes" style="flex:1;padding:10px">${F.sending ? '寫入中…' : '確定寫入'}</button>
       <button type="button" class="btn" id="fNo" style="flex:1;padding:10px">再改一下</button>
