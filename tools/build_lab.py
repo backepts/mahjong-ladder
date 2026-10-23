@@ -10,7 +10,8 @@ ROOT = Path(__file__).resolve().parent.parent
 src = (ROOT / 'index.html').read_text(encoding='utf-8')
 
 BANNER = ('<div style="background:#facc15;color:#3b2f00;border-radius:10px;padding:8px 12px;'
-          'font-size:13px;margin-bottom:14px;text-align:center"><b>LAB 測試版</b>｜送出不會寫進真的表，重新整理就還原</div>')
+          'font-size:13px;margin-bottom:14px;text-align:center"><b>LAB 測試版</b>｜送出不會寫進真的表，重新整理就還原'
+          '<br><a href="../" style="color:#3b2f00;font-weight:700">不是要測試？點這裡前往正式版 →</a></div>')
 
 # 攔截 fetch：第一次 GET 拿真資料存起來；之後 GET 回傳記憶體裡的版本；POST 用 core.js 同一套驗證後套用到記憶體
 MOCK = """<script src="core.js"></script>
