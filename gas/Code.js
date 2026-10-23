@@ -128,6 +128,7 @@ function payQr_(payload) {
   var files = DriveApp.getFolderById(PAY_FOLDER_ID).getFiles();
   while (files.hasNext()) {
     var f = files.next();
+    if (f.isTrashed()) continue;  // 換圖時舊檔丟垃圾桶，資料夾清單仍列得到它
     if (f.getName().replace(/\.[^.]+$/, '').trim().toLowerCase() !== name.toLowerCase()) continue;
     var blob = f.getBlob();
     return { ok: true, has: true, name: name, info: info, img: 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes()) };
