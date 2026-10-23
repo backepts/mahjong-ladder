@@ -77,6 +77,70 @@ function ensureFormat_(st) {
   writeOverview_(st || readState_());
 }
 
+// ---------- 付款碼 ----------
+// 圖放在 Beck 個人雲端硬碟「番仔碼頭付款碼」（不分享），檔名＝玩家名字（Yuan.png 之類）；密語存在指令碼屬性 PAY_PASS
+var PAY_FOLDER_ID = '1YgwzG2tx-tkdFYxKpw3La72p5W5jaFvy';
+
+function checkPass_(pass) {
+  var real = PropertiesService.getScriptProperties().getProperty('PAY_PASS');
+  if (!real) return '還沒設定通關密語';
+  if (String(pass || '') !== real) { Utilities.sleep(1500); return '密語不對，再試一次'; }
+  return '';
+}
+
+// 第一次直接設；之後要換必須帶對舊密語（old）。也可以到「專案設定 → 指令碼屬性」直接改 PAY_PASS
+function setPass_(payload) {
+  var props = PropertiesService.getScriptProperties();
+  var cur = props.getProperty('PAY_PASS');
+  if (cur && String(payload.old || '') !== cur) { Utilities.sleep(1500); return { ok: false, error: '舊密語不對' }; }
+  var pass = String(payload.pass || '');
+  if (pass.length < 4) return { ok: false, error: '密語至少 4 個字' };
+  props.setProperty('PAY_PASS', pass);
+  return { ok: true };
+}
+
+// 「付款資料」分頁：玩家｜銀行｜帳號（全部純文字，帳號開頭的 0 才不會被吃掉）；只在密語對時回傳，排行榜讀資料時不會帶出去
+function payInfoSheet_() {
+  var ss = ss_(), sh = ss.getSheetByName('付款資料');
+  if (!sh) {
+    sh = ss.insertSheet('付款資料');
+    sh.getRange('A:C').setNumberFormat('@');
+    sh.getRange(1, 1, 1, 3).setValues([['玩家', '銀行', '帳號']]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function payInfo_(name) {
+  var sh = payInfoSheet_(), n = sh.getLastRow() - 1;
+  var rows = n > 0 ? sh.getRange(2, 1, n, 3).getDisplayValues() : [];
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i][0].trim().toLowerCase() === name.toLowerCase() && rows[i][2].trim()) return { bank: rows[i][1].trim(), account: rows[i][2].replace(/\s/g, '') };
+  }
+  return null;
+}
+
+function payQr_(payload) {
+  var err = checkPass_(payload.pass);
+  if (err) return { ok: false, error: err, badPass: true };
+  var name = String(payload.name || '').trim();
+  var info = payInfo_(name);
+  var files = DriveApp.getFolderById(PAY_FOLDER_ID).getFiles();
+  while (files.hasNext()) {
+    var f = files.next();
+    if (f.isTrashed()) continue;  // 換圖時舊檔丟垃圾桶，資料夾清單仍列得到它
+    if (f.getName().replace(/\.[^.]+$/, '').trim().toLowerCase() !== name.toLowerCase()) continue;
+    var blob = f.getBlob();
+    return { ok: true, has: true, name: name, info: info, img: 'data:' + blob.getContentType() + ';base64,' + Utilities.base64Encode(blob.getBytes()) };
+  }
+  return { ok: true, has: !!info, name: name, info: info, img: '' };
+}
+
+// 第一次加雲端硬碟權限時，Beck 在編輯器手動執行這支，讓 Google 跳出授權
+function authorizeDrive() {
+  Logger.log('付款碼資料夾：' + DriveApp.getFolderById(PAY_FOLDER_ID).getName());
+}
+
 var STYLES = ['男短髮', '男刺蝟頭', '光頭', '女長髮', '女短髮', '女馬尾', '口罩男', '企鵝', '哥布林', '綠巨人', '高爾夫', '高爾夫女'];
 
 // 改某人的造型（Beck 跟 Claude 說要換時用）；空字串＝改回自動配
@@ -138,11 +202,19 @@ function doGet() {
 }
 
 function doPost(e) {
+  var payload;
+  try {
+    payload = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    // 讀付款碼不寫表，不用排隊拿鎖（密語錯會故意等 1.5 秒，不該卡住記帳）
+    if (payload.action === 'qr') return json_(payQr_(payload));
+  } catch (err) {
+    return json_({ ok: false, error: String(err.message || err) });
+  }
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(20000);
-    var payload = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     if (payload.action === 'style') return json_(setStyle_(payload));
+    if (payload.action === 'setpass') return json_(setPass_(payload));
     if (payload.action !== 'save') return json_({ ok: false, error: '不認得的動作' });
     var res = saveSession_(payload);
     return json_(res);
