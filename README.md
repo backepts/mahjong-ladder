@@ -50,7 +50,8 @@ GAS Web App（Beck 個人 Gmail becktsai0708，任何人可呼叫）
 
 ## 目前進度
 
-- 做到哪：主表＋後端已部署並匯入 10/21、10/22（排行數字與 Ralph 表一致）；記帳頁在 `entry` 分支本機驗證通過，**尚未上線**（main 還是舊版直接讀 Ralph 表）
-- 下一步：Beck 同意後 merge entry → main 並 push，網頁換成新版
-- 等 Beck 決定：上線
+- 做到哪：主表＋後端已部署並匯入 10/21、10/22（排行數字與 Ralph 表一致）；記帳頁在 `entry` 分支；LAB 已上 https://backepts.github.io/mahjong-ladder/lab/ （讀真資料、寫入只在瀏覽器模擬）；**正式版尚未換**（main 根目錄還是舊版直接讀 Ralph 表）
+- 下一步：Beck 實測 LAB → 同意後 merge entry → main 並 push
+- 等 Beck 決定：LAB 實測結果、正式上線
+- LAB 怎麼更新：改完 index.html 後跑 `python3 tools/build_lab.py`，把 lab/ 帶到 main 推上去
 - 之後再做：「誰跟誰同組時的勝率」分析
