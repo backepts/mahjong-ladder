@@ -88,10 +88,11 @@ function checkPass_(pass) {
   return '';
 }
 
-// 只有屬性還空著時能設（第一次由 Claude 呼叫）；之後要換密語請到「專案設定 → 指令碼屬性」改 PAY_PASS
+// 第一次直接設；之後要換必須帶對舊密語（old）。也可以到「專案設定 → 指令碼屬性」直接改 PAY_PASS
 function setPass_(payload) {
   var props = PropertiesService.getScriptProperties();
-  if (props.getProperty('PAY_PASS')) return { ok: false, error: '密語已經設定過了' };
+  var cur = props.getProperty('PAY_PASS');
+  if (cur && String(payload.old || '') !== cur) { Utilities.sleep(1500); return { ok: false, error: '舊密語不對' }; }
   var pass = String(payload.pass || '');
   if (pass.length < 4) return { ok: false, error: '密語至少 4 個字' };
   props.setProperty('PAY_PASS', pass);
