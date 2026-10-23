@@ -30,6 +30,14 @@ A 欄      │ 玩家名稱；空白列略過
 
 ## 目前進度
 
-- 做到哪：已上線 https://backepts.github.io/mahjong-ladder/ （repo backepts/mahjong-ladder，main 分支根目錄）；線上數字已驗證
-- 下一步：Beck 還要改版（內容待她提出）；改 index.html → commit → push 即自動更新（約 1 分鐘）
-- 等 Beck 決定：要改哪些地方
+- 做到哪：看板已上線 https://backepts.github.io/mahjong-ladder/ （repo backepts/mahjong-ladder，main 分支根目錄）；正在規劃「前台記帳」功能，記帳畫面模擬圖已出
+- 記帳功能已定的需求（2026-10-23）：
+  - 後端＝Beck 個人 Gmail（becktsai0708）的 GAS；需 Ralph 把 becktsai0708@gmail.com 加為 Sheet 編輯者
+  - 有網址就能輸入（不設密碼）；一組一次整批送，帳平（玩家合計＋抽頭＝0）才能送出
+  - 同天多組＝一組一欄，表頭「10/23 A」「10/23 B」；只打一組時維持「10/23」
+  - 可在網頁修改某一組；每次寫入存一筆紀錄（誰／何時／改前／改後）到 Beck 帳號另一張表
+  - 網頁可加新玩家（插在最後一位玩家下面、莊家上面）
+  - 抽頭填將數，每將預設 400 可改，寫成「400*3=1200」
+- 下一步：Beck 確認記帳模擬圖 → 實作 GAS 後端＋前台記帳頁
+- 等 Beck 決定：記帳畫面 OK 嗎；去請 Ralph 開編輯權
+- 之後再做：「誰跟誰同組時的勝率」分析（一組一欄的資料就是為了這個）
