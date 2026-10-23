@@ -3,6 +3,7 @@
 用法：python3 tools/build_lab.py
 """
 from pathlib import Path
+import json
 import shutil
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -45,7 +46,15 @@ assert src.count(anchor_script) == 1 and src.count(anchor_wrap) == 1, '找不到
 
 out = src.replace(anchor_wrap, anchor_wrap + '  ' + BANNER + '\n').replace(anchor_script, MOCK + anchor_script)
 out = out.replace('<title>番仔麻將天梯</title>', '<title>番仔麻將天梯 LAB</title>')
+# 圖示放在根目錄 icons/，LAB 在子資料夾要往上一層找；LAB 自己一份 manifest，桌面名稱加 LAB 才分得出來
+out = out.replace('href="icons/', 'href="../icons/')
+out = out.replace('content="番仔碼頭"', 'content="番仔碼頭 LAB"')
 (ROOT / 'lab').mkdir(exist_ok=True)
 (ROOT / 'lab' / 'index.html').write_text(out, encoding='utf-8')
+manifest = json.loads((ROOT / 'manifest.webmanifest').read_text(encoding='utf-8'))
+manifest['name'] = manifest['short_name'] = manifest['name'] + ' LAB'
+for icon in manifest['icons']:
+    icon['src'] = '../' + icon['src']
+(ROOT / 'lab' / 'manifest.webmanifest').write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 shutil.copy(ROOT / 'gas' / 'core.js', ROOT / 'lab' / 'core.js')
 print('lab/ 已產生')
