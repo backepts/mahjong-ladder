@@ -27,6 +27,8 @@ MOCK = """<script src="core.js"></script>
       if (!j.ok) return reply(j);
       state = { players: j.players, styles: j.styles || {}, sessions: j.sessions };
     }
+    // 付款碼只讀不寫，直接問真的後端
+    if (opt && opt.method === 'POST' && JSON.parse(opt.body).action === 'qr') return realFetch(url, opt);
     if (opt && opt.method === 'POST') {
       const prep = prepareSave(JSON.parse(opt.body), JSON.parse(JSON.stringify(state)));
       if (prep.error) return reply({ ok: false, error: prep.error });

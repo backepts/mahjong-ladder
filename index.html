@@ -98,6 +98,12 @@ footer a{color:var(--sub)}
 .road{height:2px;margin:2px 0 12px;background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px)}
 @keyframes walk{from{left:-64px}to{left:100%}}
 @keyframes frame{0%{visibility:visible}25%,100%{visibility:hidden}}
+/* 付款碼彈窗 */
+.ava{background:none;border:none;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ava:active{transform:scale(.94)}
+.ov{position:fixed;inset:0;background:rgba(5,4,20,.72);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.pop{background:var(--card);border:1px solid var(--accent);border-radius:16px;padding:20px;width:100%;max-width:300px;text-align:center}
+.pop img{width:100%;max-width:240px;border-radius:10px;background:#fff;display:block;margin:0 auto}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -119,6 +125,7 @@ footer a{color:var(--sub)}
   <main id="board"><div class="msg">洗牌中…</div></main>
   <main id="replay" hidden></main>
   <main id="entry" hidden></main>
+  <div class="ov" id="pay" hidden></div>
   <footer>番仔碼頭聯盟・每次打開都讀最新資料<br>圖示插畫：<a href="https://jp.pinterest.com/pin/826480969128407920/" target="_blank" rel="noopener">DUST FISH</a></footer>
 </div>
 
@@ -298,7 +305,7 @@ function renderReplay() {
   let table = '<div class="msg">沒有符合的牌桌，換個條件試試</div>';
   if (s) {
     const amts = s.results.map(r => r.amt), best = Math.max(...amts), worst = Math.min(...amts);
-    const seat = r => !r ? '<div></div>' : `<div class="seat">${avatar(r.name, best === worst ? 0 : r.amt === best ? 1 : r.amt === worst ? -1 : 0)}<b>${esc(r.name)}</b><span class="num ${cls(r.amt)}">${fmt(r.amt)}</span></div>`;
+    const seat = r => !r ? '<div></div>' : `<div class="seat"><button type="button" class="ava" data-qr="${esc(r.name)}" aria-label="看 ${esc(r.name)} 的付款碼">${avatar(r.name, best === worst ? 0 : r.amt === best ? 1 : r.amt === worst ? -1 : 0)}</button><b>${esc(r.name)}</b><span class="num ${cls(r.amt)}">${fmt(r.amt)}</span></div>`;
     const [n, e, so, w, ...rest] = s.results;
     table = `<div class="stage" id="stage">
       <div></div>${seat(n)}<div></div>
@@ -317,7 +324,7 @@ function renderReplay() {
       <button type="button" class="nb" id="rNext" aria-label="下一桌">›</button>
     </div>
     ${table}
-    <div class="hint" style="text-align:center;margin-top:14px">王冠＝當桌最贏　眼淚＝當桌最輸　左右滑動也能換桌</div>`;
+    <div class="hint" style="text-align:center;margin-top:14px">王冠＝當桌最贏　眼淚＝當桌最輸　左右滑動也能換桌<br>點小夥伴看他的付款碼</div>`;
 
   $('rDate').onchange = e => { RP.date = e.target.value; RP.i = 0; renderReplay(); };
   app.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
@@ -325,6 +332,7 @@ function renderReplay() {
     RP.sel.has(n) ? RP.sel.delete(n) : RP.sel.add(n);
     RP.i = 0; renderReplay();
   });
+  app.querySelectorAll('[data-qr]').forEach(b => b.onclick = () => openPay(b.dataset.qr));
   const go = d => { if (L.length) { RP.i = (RP.i + d + L.length) % L.length; renderReplay(); } };
   $('rPrev').onclick = () => go(-1);
   $('rNext').onclick = () => go(1);
@@ -337,6 +345,69 @@ function renderReplay() {
       const dx = e.changedTouches[0].clientX - x0; x0 = null;
       if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
     });
+  }
+}
+
+// ---------- 付款碼 ----------
+// 密語對了後端才會回圖；這支手機記住密語，圖只放在記憶體（重新整理就要重抓）
+const QRC = {};
+let PAY = null;
+
+function openPay(name) {
+  PAY = { name, err: '', busy: false };
+  if (QRC[name]) PAY.res = QRC[name];
+  else if (store.get('mj_pass')) fetchPay(store.get('mj_pass'));
+  renderPay();
+}
+
+function closePay() { PAY = null; $('pay').hidden = true; $('pay').innerHTML = ''; }
+
+async function fetchPay(pass) {
+  PAY.busy = true; PAY.err = ''; renderPay();
+  const name = PAY.name;
+  try {
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'qr', name, pass }) });
+    const json = await res.json();
+    if (!PAY || PAY.name !== name) return;
+    PAY.busy = false;
+    if (!json.ok) {
+      if (json.badPass) { try { localStorage.removeItem('mj_pass'); } catch (e) {} }
+      PAY.err = json.error || '讀取失敗';
+    } else {
+      store.set('mj_pass', pass);
+      QRC[name] = PAY.res = json;
+    }
+  } catch (e) {
+    if (!PAY) return;
+    PAY.busy = false; PAY.err = '連不上：' + (e.message || e);
+  }
+  renderPay();
+}
+
+function renderPay() {
+  if (!PAY) return;
+  const ov = $('pay'), n = esc(PAY.name);
+  const close = '<button type="button" class="btn" id="pClose" style="width:100%;padding:10px;margin-top:14px">關閉</button>';
+  let h;
+  if (PAY.res && PAY.res.has) h = `<div style="font-size:17px;font-weight:700;color:var(--white);margin-bottom:12px">付給 ${n}</div><img src="${PAY.res.img}" alt="${n} 的付款碼"><div class="hint" style="margin-top:10px">用銀行 App 掃這個碼轉帳</div>${close}`;
+  else if (PAY.res) h = `<div style="font-size:17px;font-weight:700;color:var(--white);margin-bottom:8px">${n}</div><div style="font-size:13px;color:var(--sub)">還沒有提供付款碼</div>${close}`;
+  else if (PAY.busy) h = `<div style="font-size:14px;color:var(--sub);padding:20px 0">讀取付款碼中…</div>${close}`;
+  else h = `<div style="font-size:17px;font-weight:700;color:var(--white);margin-bottom:6px">輸入通關密語</div>
+    <div class="hint" style="margin-bottom:12px">只有番仔碼頭的人看得到付款碼，這支手機輸入一次就會記住</div>
+    <input class="in" id="pPass" type="password" autocomplete="off">
+    <div class="err-t" style="min-height:18px">${esc(PAY.err)}</div>
+    <div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="btn pri" id="pGo" style="flex:1;padding:10px">確定</button><button type="button" class="btn" id="pClose" style="flex:1;padding:10px">取消</button></div>`;
+  ov.innerHTML = `<div class="pop">${h}</div>`;
+  ov.hidden = false;
+  $('pClose').onclick = closePay;
+  ov.onclick = e => { if (e.target === ov) closePay(); };
+  const pi = $('pPass');
+  if (pi) {
+    const go = () => { if (!pi.value) { PAY.err = '先輸入密語'; renderPay(); return; } fetchPay(pi.value); };
+    $('pGo').onclick = go;
+    pi.onkeydown = e => { if (e.key === 'Enter') go(); };
+    pi.oninput = () => { if (PAY.err) { PAY.err = ''; const t = ov.querySelector('.err-t'); if (t) t.textContent = ''; } };
+    pi.focus();
   }
 }
 
