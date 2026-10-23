@@ -80,7 +80,7 @@ function prepareSave(payload, state) {
   var house = per * rounds;
 
   var sum = clean.reduce(function (a, r) { return a + r.amt; }, 0);
-  if (sum + house !== 0) return { error: '帳不平：玩家合計 ' + sum + '＋抽頭 ' + house + '＝' + (sum + house) };
+  if (sum + house !== 0) return { error: '帳不平：玩家合計 ' + sum + '＋東錢 ' + house + '＝' + (sum + house) };
 
   var newPlayers = clean.map(function (r) { return r.name; })
     .filter(function (n) { return state.players.indexOf(n) < 0; });
