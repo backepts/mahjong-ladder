@@ -4,6 +4,8 @@ var HOUSE_NAME = '莊家';
 var MAX_NAME_LEN = 20;
 var MAX_AMOUNT = 1000000;
 
+var TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 function trimStr_(s) {
   return String(s == null ? '' : s).trim();
 }
@@ -79,6 +81,13 @@ function prepareSave(payload, state) {
   if (!Number.isInteger(rounds) || rounds < 0 || rounds > 100) return { error: '將數不對' };
   var house = per * rounds;
 
+  // 開局／結束時間可不填；要填就兩個一起填（HH:MM），結束比開局早＝過了午夜
+  var start = trimStr_(payload.start), end = trimStr_(payload.end);
+  if (start || end) {
+    if (!TIME_RE.test(start) || !TIME_RE.test(end)) return { error: '開局和結束時間要一起填，格式像 19:30' };
+    if (start === end) return { error: '開局和結束時間不能一樣' };
+  }
+
   var sum = clean.reduce(function (a, r) { return a + r.amt; }, 0);
   if (sum + house !== 0) return { error: '帳不平：玩家合計 ' + sum + '＋東錢 ' + house + '＝' + (sum + house) };
 
@@ -86,7 +95,7 @@ function prepareSave(payload, state) {
     .filter(function (n) { return state.players.indexOf(n) < 0; });
 
   return {
-    session: { id: date + '#' + group, date: date, group: group, per: per, rounds: rounds, house: house, results: clean },
+    session: { id: date + '#' + group, date: date, group: group, per: per, rounds: rounds, house: house, start: start, end: end, results: clean },
     newPlayers: newPlayers,
     before: before || null,
     by: by

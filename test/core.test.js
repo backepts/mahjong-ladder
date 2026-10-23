@@ -24,6 +24,15 @@ assert.strictEqual(r.session.id, '2026-10-22#A');
 assert.strictEqual(r.session.house, 2000);
 assert.deepStrictEqual(r.newPlayers, []);
 
+// 開局／結束時間：可不填；填就要兩個一起、格式 HH:MM
+assert.strictEqual(r.session.start, '');
+r = C.prepareSave(Object.assign({}, ok, { start: '19:30', end: '02:10' }), state());
+assert.ifError(r.error);
+assert.strictEqual(r.session.end, '02:10');
+assert.ok(C.prepareSave(Object.assign({}, ok, { start: '19:30' }), state()).error);
+assert.ok(C.prepareSave(Object.assign({}, ok, { start: '7:30', end: '9:00' }), state()).error);
+assert.ok(C.prepareSave(Object.assign({}, ok, { start: '19:30', end: '19:30' }), state()).error);
+
 // 同天第二組
 r = C.prepareSave(Object.assign({}, ok, { date: '2026-10-21', rounds: 5 }), state());
 assert.strictEqual(r.session.id, '2026-10-21#B');

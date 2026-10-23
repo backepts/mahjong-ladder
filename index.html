@@ -303,6 +303,15 @@ function avatar(name, mood, size = 56, helmet = false) {
   return `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 14 14" shape-rendering="crispEdges" aria-hidden="true">${o}</svg>`;
 }
 
+// 對局分鐘數；結束比開局早＝過了午夜
+function durMin(start, end) {
+  const t = x => { const [h, m] = x.split(':').map(Number); return h * 60 + m; };
+  const d = t(end) - t(start);
+  return d > 0 ? d : d + 1440;
+}
+const fmtDur = m => (m >= 60 ? `${Math.floor(m / 60)} 小時 ` : '') + `${m % 60} 分`;
+const perRound = s => s.start && s.end && s.rounds ? durMin(s.start, s.end) / s.rounds : null;
+
 const RP = { date: 'all', sel: new Set(), i: 0 };
 
 function replayList() {
@@ -326,7 +335,7 @@ function renderReplay() {
     const [n, e, so, w, ...rest] = s.results;
     table = `<div class="stage" id="stage">
       <div></div>${seat(n)}<div></div>
-      ${seat(w)}<div class="felt"><div style="font-size:18px;font-weight:700;color:#e8ffe9">${esc(s.label)}</div><div style="font-size:12px;color:#bde8cf">${s.rounds} 將</div><div style="font-size:12px;color:var(--gold)">東錢 ${s.house.toLocaleString()}</div></div>${seat(e)}
+      ${seat(w)}<div class="felt"><div style="font-size:18px;font-weight:700;color:#e8ffe9">${esc(s.label)}</div>${s.start && s.end ? `<div style="font-size:12px;color:#bde8cf">${esc(s.start)}～${esc(s.end)}</div><div style="font-size:12px;color:#bde8cf">${s.rounds} 將・每將 ${Math.round(perRound(s))} 分</div>` : `<div style="font-size:12px;color:#bde8cf">${s.rounds} 將</div>`}<div style="font-size:12px;color:var(--gold)">東錢 ${s.house.toLocaleString()}</div></div>${seat(e)}
       <div></div>${seat(so)}<div></div>
     </div>${rest.length ? `<div class="extra">${rest.map(seat).join('')}</div>` : ''}`;
   }
@@ -474,9 +483,18 @@ function recBlock(title, list, val, helmetTop) {
   return `<div class="sec">${title}</div><div class="recs">${rows || '<div class="hint" style="padding:10px 0">還沒有紀錄</div>'}</div>`;
 }
 
+// 最快／最慢：每列是那一桌四個人的頭像組合
+function tableBlock(title, list) {
+  const rows = list.map(it => `<div class="rec"><div class="medal num" style="background:${MEDAL[it.rank - 1][0]};color:${MEDAL[it.rank - 1][1]}">${it.rank}</div>
+    <div class="nm"><div style="display:flex;gap:2px">${it.s.results.map(r => avatar(r.name, 0, 32)).join('')}</div><small>${esc(it.s.label)}・${esc(it.s.start)}～${esc(it.s.end)}</small></div>
+    <span class="num" style="color:var(--white)">${it.v} 分</span></div>`).join('');
+  return `<div class="sec">${title}</div><div class="recs">${rows || '<div class="hint" style="padding:10px 0">還沒有記時間的桌</div>'}</div>`;
+}
+
 function renderRecords() {
   const app = $('records');
   if (!D.sessions.length) { app.innerHTML = '<div class="msg">還沒有任何對局紀錄</div>'; return; }
+  const timed = D.sessions.filter(s => perRound(s) !== null).map(s => ({ s, v: Math.round(perRound(s)) }));
   const singles = D.sessions.flatMap(s => s.results.map(r => ({ name: r.name, v: r.amt, sub: s.label })));
   const attend = D.active.map(p => ({ name: p.name, v: p.played.length }));
   const money = it => `<span class="num ${cls(it.v)}">${fmt(it.v)}</span>`;
@@ -485,6 +503,8 @@ function renderRecords() {
     recBlock('單場最輸', top3(singles.filter(x => x.v < 0), (a, b) => a.v < b.v), money) +
     recBlock('出席（打了幾桌）', top3(attend, (a, b) => a.v > b.v), it => `<span class="num" style="color:var(--white)">${it.v} 桌</span>`) +
     recBlock('連續戰鬥天數', top3(streaks(), (a, b) => a.v > b.v), it => `<span class="num" style="color:var(--white)">${it.v} 天</span>`, true) +
+    tableBlock('最快場次（每將平均）', top3(timed, (a, b) => a.v < b.v)) +
+    tableBlock('最慢場次（每將平均）', top3(timed, (a, b) => a.v > b.v)) +
     '<div class="hint" style="margin-top:10px">同分並列同名次。連續戰鬥天數第一名戴好戰者頭盔</div>';
 }
 
@@ -538,8 +558,11 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+const nowHM = () => { const d = new Date(); return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+
 function newForm(mode) {
-  return { mode, id: null, date: todayStr(), picked: [], vals: {}, per: DEFAULT_PER, rounds: '', by: store.get('mj_by') || '', extra: [], confirming: false, err: '', sending: false };
+  // 結束時間先帶現在；開局沒填就當整組沒填時間
+  return { mode, id: null, date: todayStr(), picked: [], vals: {}, per: DEFAULT_PER, rounds: '', start: '', end: mode === 'new' ? nowHM() : '', by: store.get('mj_by') || '', extra: [], confirming: false, err: '', sending: false };
 }
 
 function showEntry(on) {
@@ -583,6 +606,8 @@ function calc() {
   else if (missing.length) reason = '還沒填金額：' + missing.join('、');
   else if (F.rounds === '') reason = '還沒填將數';
   else if (sum + house !== 0) reason = '帳不平，差 ' + fmt(-(sum + house));
+  else if (F.start && !F.end) reason = '還沒填結束時間';
+  else if (F.start && F.start === F.end) reason = '開局和結束時間不能一樣';
   else if (!F.by) reason = '先選「我是誰」';
   return { sum, house, ok: !reason, reason };
 }
@@ -622,6 +647,13 @@ function renderEntry() {
       <span class="num" id="fHouse" style="color:var(--gold);min-width:60px;text-align:right">${c.house.toLocaleString()}</span>
     </div>
 
+    <div class="sec">時間（可不填）</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div><div class="hint" style="margin:0 0 4px">開局</div><input class="in" type="time" id="fStart" value="${esc(F.start)}"></div>
+      <div><div class="hint" style="margin:0 0 4px">結束</div><input class="in" type="time" id="fEnd" value="${esc(F.end)}"></div>
+    </div>
+    <div class="hint" id="fDur"></div>
+
     <div class="sec">我是誰</div>
     <select class="in" id="fBy"><option value="">選你自己</option>${allPlayers().map(n => `<option ${F.by === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
 
@@ -637,6 +669,8 @@ function updateBal() {
   if (!box) return;
   const c = calc();
   $('fHouse').textContent = c.house.toLocaleString();
+  const m = F.start && F.end && F.start !== F.end ? durMin(F.start, F.end) : 0;
+  $('fDur').textContent = m ? `共 ${fmtDur(m)}${Number(F.rounds) ? `・每將平均 ${Math.round(m / Number(F.rounds))} 分` : ''}` : '沒填開局時間的話，這組就不記時間；結束比開局早＝過了午夜';
   box.style.background = c.ok ? '#0f3b33' : '#3b1420';
   box.style.color = c.ok ? 'var(--win)' : 'var(--lose)';
   box.innerHTML = `玩家合計 <span class="num">${fmt(c.sum)}</span>　＋　東錢 <span class="num">${c.house.toLocaleString()}</span>　＝　<span class="num">${fmt(c.sum + c.house)}</span><br><b>${c.ok ? '帳平了，可以送出' : esc(c.reason)}</b>`;
@@ -656,7 +690,7 @@ function renderMsg() {
   m.innerHTML = `<div class="confirm">
     <div style="color:var(--white);font-weight:500">${F.mode === 'edit' ? '確定覆蓋' : '確定新增'}「${esc(label)}」？</div>
     ${F.picked.map(n => `${esc(n)} <span class="num ${cls(F.vals[n].v * F.vals[n].s)}">${fmt(F.vals[n].v * F.vals[n].s)}</span>`).join('、')}<br>
-    東錢 ${Number(F.per)}*${Number(F.rounds)}=${c.house}・記帳人 ${esc(F.by)}
+    東錢 ${Number(F.per)}*${Number(F.rounds)}=${c.house}・記帳人 ${esc(F.by)}${F.start && F.end ? `<br>時間 ${esc(F.start)}～${esc(F.end)}（${fmtDur(durMin(F.start, F.end))}）` : ''}
     <div style="display:flex;gap:6px;margin-top:10px">
       <button type="button" class="btn pri" id="fYes" style="flex:1;padding:10px">${F.sending ? '寫入中…' : '確定寫入'}</button>
       <button type="button" class="btn" id="fNo" style="flex:1;padding:10px">再改一下</button>
@@ -670,7 +704,7 @@ function bindEntry() {
   document.querySelectorAll('#entry [data-sid]').forEach(b => b.onclick = () => {
     const s = RAW.sessions.find(x => x.id === b.dataset.sid);
     F = newForm('edit');
-    F.id = s.id; F.date = s.date; F.per = s.per; F.rounds = String(s.rounds);
+    F.id = s.id; F.date = s.date; F.per = s.per; F.rounds = String(s.rounds); F.start = s.start || ''; F.end = s.end || '';
     s.results.forEach(r => { F.picked.push(r.name); F.vals[r.name] = { v: String(Math.abs(r.amt)), s: r.amt < 0 ? -1 : 1 }; });
     renderEntry();
   });
@@ -704,6 +738,8 @@ function bindEntry() {
     dirty();
   });
   $('fRounds').oninput = e => { F.rounds = e.target.value.replace(/[^\d]/g, ''); dirty(); };
+  $('fStart').oninput = e => { F.start = e.target.value; dirty(); };
+  $('fEnd').oninput = e => { F.end = e.target.value; dirty(); };
   $('fPer').oninput = e => { F.per = e.target.value.replace(/[^\d]/g, ''); dirty(); };
   $('fBy').onchange = e => { F.by = e.target.value; store.set('mj_by', F.by); dirty(); };
   $('fGo').onclick = () => {
@@ -720,6 +756,7 @@ async function submit() {
   const payload = {
     action: 'save', id: F.id || undefined, date: F.date, by: F.by,
     per: Number(F.per), rounds: Number(F.rounds),
+    start: F.start && F.end ? F.start : '', end: F.start && F.end ? F.end : '',
     results: F.picked.map(n => ({ name: n, amt: Number(F.vals[n].v) * F.vals[n].s }))
   };
   try {
