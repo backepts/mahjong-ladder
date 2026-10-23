@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0b24">
+<title>番仔麻將天梯</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0b24; --card:#17143a; --card2:#1f1b4a; --line:#2a2660; --accent:#a78bfa;
+  --text:#e8e6ff; --sub:#8f89d6; --dim:#6b66a8; --white:#fff;
+  --win:#5eead4; --lose:#fb7185; --gold:#facc15; --gold-ink:#3b2f00;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans TC",system-ui,sans-serif;font-size:15px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:480px;margin:0 auto;padding:20px 16px 40px}
+.num{font-family:"Orbitron","Noto Sans TC",sans-serif;font-variant-numeric:tabular-nums}
+header{display:flex;justify-content:space-between;align-items:center}
+.org{font-size:12px;color:var(--sub);letter-spacing:2px}
+h1{margin:2px 0 0;font-size:24px;font-weight:700;color:var(--white)}
+.season{font-size:12px;background:var(--accent);color:#1e1546;padding:2px 8px;border-radius:6px;vertical-align:4px;margin-left:4px}
+.meta{font-size:12px;color:var(--dim);margin-top:6px;display:flex;justify-content:space-between;align-items:center}
+.btn{background:transparent;border:1px solid var(--line);color:var(--sub);border-radius:8px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer}
+.btn:active{transform:scale(.97)}
+.sec{font-size:12px;color:var(--sub);margin:22px 2px 8px;letter-spacing:2px}
+.row{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;background:var(--card);margin-bottom:6px;cursor:pointer;border:1px solid var(--line);transition:border-color .2s,transform .1s;width:100%;color:inherit;font:inherit;text-align:left}
+.row:active{transform:scale(.99)}
+.row.on{border-color:var(--accent);background:var(--card2)}
+.rk{width:32px;height:32px;flex:none;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;background:var(--line);color:#c4c0ff}
+.rk.first{background:var(--gold);color:var(--gold-ink);font-size:16px}
+.who{flex:1;min-width:0}
+.who b{display:block;font-weight:500;color:var(--white);font-size:16px}
+.tier{font-size:11px;padding:1px 7px;border-radius:5px}
+.amt{font-size:17px;font-weight:700}
+.pos{color:var(--win)} .neg{color:var(--lose)} .zero{color:var(--sub)}
+.card{background:var(--card);border-radius:14px;padding:16px;border:1px solid var(--accent)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:12px 0;text-align:center;font-size:11px;color:var(--sub)}
+.grid4 div div{font-size:15px;color:var(--white);font-weight:700;margin-top:2px}
+.grid4 div div.pos{color:var(--win)} .grid4 div div.neg{color:var(--lose)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.st{background:var(--card);border-radius:12px;padding:12px 6px;text-align:center;border:1px solid var(--line)}
+.st small{display:block;font-size:11px;color:var(--sub)}
+.st span{font-size:19px;font-weight:700}
+.days{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px}
+.day{flex:0 0 auto;min-width:64px;background:var(--bg);border-radius:8px;padding:6px 8px;text-align:center;font-size:11px;color:var(--dim)}
+.day div{font-size:13px;font-weight:700;margin-top:2px}
+.hrow{display:flex;justify-content:space-between;font-size:13px;color:#c4c0ff;padding:8px 12px;background:var(--card);border-radius:8px;margin-bottom:4px}
+.chip{font-size:12px;padding:4px 10px;border-radius:8px;background:var(--card);color:var(--dim);border:1px dashed var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.msg{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;text-align:center;color:var(--sub);margin-top:20px}
+.msg.err{border-color:var(--lose);color:var(--lose)}
+.warn{font-size:11px;color:var(--lose);margin-left:6px}
+footer{margin-top:28px;text-align:center;font-size:11px;color:var(--dim)}
+footer a{color:var(--sub)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rise{animation:rise .35s ease both}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="org">番仔麻將聯盟</div>
+      <h1>天梯排行榜<span class="season num">S1</span></h1>
+    </div>
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h2a2 2 0 0 1 0 4h-2M7 5H5a2 2 0 0 0 0 4h2"/></svg>
+  </header>
+  <div class="meta"><span id="meta">讀取中…</span><button class="btn" id="reload" type="button">重新整理</button></div>
+  <main id="app"><div class="msg">洗牌中…</div></main>
+  <footer>資料來源：<a id="src" target="_blank" rel="noopener">番仔輸贏表</a>・每次打開都讀最新資料</footer>
+</div>
+
+<script>
+const SHEET_ID = '1GkPtdUNP4ofLWIJvZwTFeEUzuhIJA_1qoWf81SPkthI';
+const GID = '0';
+const HOUSE_NAME = '莊家';
+const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+document.getElementById('src').href = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=${GID}`;
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => (n > 0 ? '+' : '') + Math.round(n).toLocaleString();
+const cls = n => n > 0 ? 'pos' : n < 0 ? 'neg' : 'zero';
+
+function parseCSV(text) {
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { cur += '"'; i++; }
+      else if (c === '"') q = false;
+      else cur += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(cur); cur = ''; }
+    else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+    else if (c !== '\r') cur += c;
+  }
+  row.push(cur); rows.push(row);
+  return rows;
+}
+
+function toNum(s) {
+  const t = String(s || '').replace(/[,\s]/g, '');
+  if (t === '') return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+// 莊家格式「400*3=1200」：取等號後當金額，等號前拆每將與將數；只有數字也接受
+function parseHouse(s) {
+  const t = String(s || '').replace(/[,\s]/g, '').replace(/[×xX]/g, '*');
+  if (t === '') return null;
+  const m = t.match(/^(\d+(?:\.\d+)?)\*(\d+(?:\.\d+)?)=(-?\d+(?:\.\d+)?)$/);
+  if (m) return { amount: +m[3], per: +m[1], rounds: +m[2] };
+  const eq = t.split('=').pop();
+  const n = Number(eq);
+  return Number.isFinite(n) ? { amount: n, per: null, rounds: null } : null;
+}
+
+function build(rows) {
+  const head = rows[0] || [];
+  if (String(head[0]).trim() !== '日期') throw new Error('表格第一格不是「日期」，格式可能被改過');
+  const cols = [];
+  for (let c = 1; c < head.length; c++) if (String(head[c]).trim()) cols.push({ c, date: String(head[c]).trim() });
+  const players = [], house = cols.map(() => null), bad = [];
+  for (let r = 1; r < rows.length; r++) {
+    const name = String(rows[r][0] || '').trim();
+    if (!name) continue;
+    if (name === HOUSE_NAME) { cols.forEach((col, i) => house[i] = parseHouse(rows[r][col.c])); continue; }
+    const vals = cols.map(col => {
+      const n = toNum(rows[r][col.c]);
+      if (Number.isNaN(n)) { bad.push(`${name} ${col.date}`); return null; }
+      return n;
+    });
+    players.push({ name, vals });
+  }
+  const dates = cols.map(c => c.date);
+  const playedIdx = dates.map((_, i) => players.some(p => p.vals[i] !== null) || house[i] !== null);
+  const sessions = playedIdx.filter(Boolean).length;
+  const lastDate = dates.filter((_, i) => playedIdx[i]).pop() || '—';
+  // 每天玩家輸贏＋莊家抽頭應該剛好為 0，不為 0 就標示帳不平
+  const unbalanced = dates.map((_, i) => {
+    if (!playedIdx[i]) return false;
+    const s = players.reduce((a, p) => a + (p.vals[i] || 0), 0) + (house[i] ? house[i].amount : 0);
+    return Math.abs(s) > 0.5;
+  });
+  players.forEach(p => {
+    p.played = p.vals.filter(v => v !== null);
+    p.total = p.played.reduce((a, v) => a + v, 0);
+  });
+  const active = players.filter(p => p.played.length).sort((a, b) => b.total - a.total);
+  const idle = players.filter(p => !p.played.length);
+  return { dates, players, active, idle, house, sessions, lastDate, unbalanced, bad };
+}
+
+function tierOf(i, n) {
+  if (i === 0) return ['雀王', '#facc15', '#3b2f00'];
+  if (i === n - 1 && n > 1) return ['慈善家', '#fb7185', '#4a0d1a'];
+  if (i < 3) return ['鑽石', '#7dd3fc', '#0b2a3d'];
+  return ['白銀', '#a5a3c9', '#25233f'];
+}
+
+let D = null, sel = null;
+
+function render() {
+  const app = document.getElementById('app');
+  if (!D.active.length) { app.innerHTML = '<div class="msg">還沒有任何對局紀錄</div>'; return; }
+  if (!sel || !D.active.find(p => p.name === sel)) sel = D.active[0].name;
+  const n = D.active.length;
+  const lb = D.active.map((p, i) => {
+    const [tn, c, bg] = tierOf(i, n);
+    return `<button type="button" class="row rise ${p.name === sel ? 'on' : ''}" style="animation-delay:${i * 40}ms" data-name="${esc(p.name)}">
+      <div class="rk num ${i === 0 ? 'first' : ''}">${i === 0 ? '♛' : i + 1}</div>
+      <div class="who"><b>${esc(p.name)}</b><span class="tier" style="background:${bg};color:${c}">${tn}</span></div>
+      <div class="amt num ${cls(p.total)}">${fmt(p.total)}</div></button>`;
+  }).join('');
+
+  const hs = D.house.map((h, i) => ({ h, i })).filter(x => x.h);
+  const hTotal = hs.reduce((a, x) => a + x.h.amount, 0);
+  const hRounds = hs.every(x => x.h.rounds !== null) ? hs.reduce((a, x) => a + x.h.rounds, 0) : null;
+  const pers = [...new Set(hs.map(x => x.h.per).filter(v => v !== null))];
+  const hList = hs.slice().reverse().map(({ h, i }) =>
+    `<div class="hrow"><span>${esc(D.dates[i])}${D.unbalanced[i] ? '<span class="warn">帳不平</span>' : ''}</span><span>${h.rounds !== null ? `${h.rounds} 將 × ${h.per}` : ''}</span><span class="num" style="color:var(--gold)">${Math.round(h.amount).toLocaleString()}</span></div>`).join('');
+
+  app.innerHTML = `
+    <div class="sec">總排行</div><div id="lb">${lb}</div>
+    <div class="sec">個人戰績卡</div><div class="card" id="card"></div>
+    <div class="sec">莊家抽頭</div>
+    <div class="grid3">
+      <div class="st"><small>累計抽頭</small><span class="num" style="color:var(--gold)">${Math.round(hTotal).toLocaleString()}</span></div>
+      <div class="st"><small>總將數</small><span class="num">${hRounds ?? '—'}</span></div>
+      <div class="st"><small>每將</small><span class="num">${pers.length === 1 ? pers[0] : '—'}</span></div>
+    </div>
+    <div style="margin-top:8px">${hList || '<div class="hrow">尚無抽頭紀錄</div>'}</div>
+    ${D.idle.length ? `<div class="sec">尚未出賽</div><div class="chips">${D.idle.map(p => `<span class="chip">${esc(p.name)}</span>`).join('')}</div>` : ''}
+    ${D.bad.length ? `<div class="msg err" style="font-size:12px">這幾格不是數字，沒有算進去：${D.bad.map(esc).join('、')}</div>` : ''}`;
+
+  document.querySelectorAll('#lb .row').forEach(el => el.addEventListener('click', () => {
+    sel = el.dataset.name;
+    document.querySelectorAll('#lb .row').forEach(r => r.classList.toggle('on', r === el));
+    renderCard();
+  }));
+  renderCard();
+}
+
+function renderCard() {
+  const p = D.active.find(x => x.name === sel);
+  const wins = p.played.filter(v => v > 0).length;
+  let acc = 0;
+  const pts = [0, ...p.vals.map(v => acc += (v || 0))];
+  const mx = Math.max(...pts.map(Math.abs), 1);
+  const W = 300, H = 64, step = W / Math.max(pts.length - 1, 1);
+  const y = v => H / 2 - v / mx * (H / 2 - 5);
+  const line = pts.map((v, i) => `${(i * step).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const days = p.vals.map((v, i) => ({ v, i })).filter(x => x.v !== null).reverse()
+    .map(({ v, i }) => `<div class="day">${esc(D.dates[i])}<div class="num ${cls(v)}">${fmt(v)}</div></div>`).join('');
+  document.getElementById('card').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline">
+      <div style="font-size:20px;font-weight:700;color:var(--white)">${esc(p.name)}</div>
+      <div class="num ${cls(p.total)}" style="font-size:24px;font-weight:700">${fmt(p.total)}</div>
+    </div>
+    <div class="grid4">
+      <div>出賽<div class="num">${p.played.length}</div></div>
+      <div>勝率<div class="num">${Math.round(wins / p.played.length * 100)}%</div></div>
+      <div>單場最贏<div class="num pos">${wins ? fmt(Math.max(...p.played)) : '—'}</div></div>
+      <div>單場最輸<div class="num neg">${p.played.some(v => v < 0) ? fmt(Math.min(...p.played)) : '—'}</div></div>
+    </div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:64px" aria-label="累計輸贏走勢">
+      <line x1="0" y1="${H / 2}" x2="${W}" y2="${H / 2}" stroke="#2a2660" stroke-dasharray="3 3"/>
+      <polyline points="${line}" fill="none" stroke="#a78bfa" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${((pts.length - 1) * step).toFixed(1)}" cy="${y(pts[pts.length - 1]).toFixed(1)}" r="4" fill="#a78bfa"/>
+    </svg>
+    <div class="days">${days}</div>`;
+}
+
+async function load() {
+  const meta = document.getElementById('meta');
+  meta.textContent = '讀取中…';
+  try {
+    const res = await fetch(CSV_URL + '&t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('讀不到表格（HTTP ' + res.status + '），可能被改成不公開');
+    D = build(parseCSV(await res.text()));
+    meta.textContent = `資料更新至 ${D.lastDate}・共 ${D.sessions} 場`;
+    render();
+  } catch (e) {
+    meta.textContent = '讀取失敗';
+    document.getElementById('app').innerHTML = `<div class="msg err">${esc(e.message || e)}</div>`;
+  }
+}
+document.getElementById('reload').addEventListener('click', load);
+load();
+</script>
+</body>
+</html>
