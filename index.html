@@ -27,6 +27,7 @@ html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans
 header{display:flex;justify-content:space-between;align-items:center}
 .org{font-size:12px;color:var(--sub);letter-spacing:2px}
 h1{margin:2px 0 0;font-size:24px;font-weight:700;color:var(--white)}
+.tagline{font-size:13px;color:var(--accent);margin-top:4px;letter-spacing:1px}
 .season{font-size:12px;background:var(--accent);color:var(--accent-ink);padding:2px 8px;border-radius:6px;vertical-align:4px;margin-left:4px}
 .meta{font-size:12px;color:var(--dim);margin-top:6px;display:flex;justify-content:space-between;align-items:center;gap:6px}
 .btn{background:transparent;border:1px solid var(--line);color:var(--sub);border-radius:8px;padding:5px 11px;font:inherit;font-size:12px;cursor:pointer}
@@ -89,6 +90,7 @@ footer a{color:var(--sub)}
     <div>
       <div class="org">番仔碼頭聯盟</div>
       <h1 id="title">天梯排行榜<span class="season num">S1</span></h1>
+      <div class="tagline" id="tagline">大家都說自己輸，那到底誰贏？</div>
     </div>
     <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h2a2 2 0 0 1 0 4h-2M7 5H5a2 2 0 0 0 0 4h2"/></svg>
   </header>
@@ -245,6 +247,7 @@ function showEntry(on) {
   $('board').hidden = on;
   $('entry').hidden = !on;
   $('toEntry').textContent = on ? '回排行榜' : '記帳';
+  $('tagline').hidden = on;
   $('title').innerHTML = (on ? '記帳' : '天梯排行榜') + '<span class="season num">S1</span>';
   if (on) { F = newForm('new'); renderEntry(); }
   window.scrollTo(0, 0);
