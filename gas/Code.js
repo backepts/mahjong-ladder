@@ -9,7 +9,7 @@ var SHEET = {
 };
 var HEADERS = {
   results: ['場次ID', '日期', '組別', '玩家', '輸贏', '寫入時間'],
-  house: ['場次ID', '日期', '組別', '每將', '將數', '抽頭', '寫入時間'],
+  house: ['場次ID', '日期', '組別', '每將', '將數', '抽頭', '寫入時間', '開局', '結束'],
   players: ['玩家', '加入日期', '造型'],
   log: ['時間', '動作', '場次ID', '場次', '記帳人', '改前', '改後']
 };
@@ -44,7 +44,7 @@ function readState_() {
   var byId = {};
   rows_('house').forEach(function (r) {
     var id = String(r[0]);
-    byId[id] = { id: id, date: String(r[1]), group: String(r[2]), per: Number(r[3]), rounds: Number(r[4]), house: Number(r[5]), results: [] };
+    byId[id] = { id: id, date: String(r[1]), group: String(r[2]), per: Number(r[3]), rounds: Number(r[4]), house: Number(r[5]), start: String(r[7] || ''), end: String(r[8] || ''), results: [] };
   });
   rows_('results').forEach(function (r) {
     var s = byId[String(r[0])];
@@ -64,6 +64,7 @@ function ensureFormat_(st) {
   if (ss.getSpreadsheetTimeZone() !== 'Asia/Taipei') ss.setSpreadsheetTimeZone('Asia/Taipei');
   fixTimestamps_();
   seedStyles_();
+  ensureTimeCols_();
   var log = sheet_('log');
   if (log.getRange('D1').getNumberFormat() === '@') return;
   log.getRange('D:D').setNumberFormat('@');
@@ -157,6 +158,14 @@ function setStyle_(payload) {
   return { ok: true, name: name, style: style };
 }
 
+// 抽頭分頁 H、I 欄＝開局、結束（純文字 HH:MM，避免被轉成時間格式）
+function ensureTimeCols_() {
+  var hs = sheet_('house');
+  if (String(hs.getRange('H1').getValue()) === '開局') return;
+  hs.getRange('H:I').setNumberFormat('@');
+  hs.getRange('H1:I1').setValues([['開局', '結束']]).setFontWeight('bold');
+}
+
 function seedStyles_() {
   var ps = sheet_('players');
   if (String(ps.getRange('C1').getValue()) === '造型') return;
@@ -245,7 +254,7 @@ function saveSession_(payload) {
   rs.getRange(rs.getLastRow() + 1, 1, s.results.length, 6)
     .setValues(s.results.map(function (r) { return [s.id, s.date, s.group, r.name, r.amt, stamp]; }));
   var hs = sheet_('house');
-  hs.getRange(hs.getLastRow() + 1, 1, 1, 7).setValues([[s.id, s.date, s.group, s.per, s.rounds, s.house, stamp]]);
+  hs.getRange(hs.getLastRow() + 1, 1, 1, 9).setValues([[s.id, s.date, s.group, s.per, s.rounds, s.house, stamp, s.start, s.end]]);
 
   var after = readState_();
   var saved = after.sessions.filter(function (x) { return x.id === s.id; })[0];
@@ -259,7 +268,7 @@ function saveSession_(payload) {
 }
 
 function stripSession_(s) {
-  return { per: s.per, rounds: s.rounds, house: s.house, results: s.results };
+  return { per: s.per, rounds: s.rounds, house: s.house, start: s.start || '', end: s.end || '', results: s.results };
 }
 
 function deleteSessionRows_(id) {
