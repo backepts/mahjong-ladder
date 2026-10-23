@@ -10,10 +10,15 @@ var SHEET = {
 var HEADERS = {
   results: ['場次ID', '日期', '組別', '玩家', '輸贏', '寫入時間'],
   house: ['場次ID', '日期', '組別', '每將', '將數', '抽頭', '寫入時間'],
-  players: ['玩家', '加入日期'],
+  players: ['玩家', '加入日期', '造型'],
   log: ['時間', '動作', '場次ID', '場次', '記帳人', '改前', '改後']
 };
 var INITIAL_PLAYERS = ['Congo', 'Rick', 'Yuan', 'PP', 'Joy', 'Poting', 'Ralph', 'Amy', 'Ariel', 'Albee', 'Ivy'];
+// 戰況回顧的像素造型（玩家分頁 C 欄）；第一次讀到沒有 C 欄表頭時填入，之後直接改那一格就好，空白＝網頁自動配
+var INITIAL_STYLES = {
+  Congo: '光頭', Rick: '綠巨人', Yuan: '企鵝', PP: '口罩男', Joy: '女馬尾', Poting: '高爾夫',
+  Ralph: '哥布林', Amy: '女長髮', Ariel: '女長髮', Albee: '女長髮', Ivy: '女長髮'
+};
 
 function ss_() {
   return SpreadsheetApp.getActiveSpreadsheet();
@@ -32,7 +37,10 @@ function rows_(key) {
 }
 
 function readState_() {
-  var players = rows_('players').map(function (r) { return String(r[0]).trim(); }).filter(String);
+  var prows = rows_('players').filter(function (r) { return String(r[0]).trim(); });
+  var players = prows.map(function (r) { return String(r[0]).trim(); });
+  var styles = {};
+  prows.forEach(function (r) { if (r[2] && String(r[2]).trim()) styles[String(r[0]).trim()] = String(r[2]).trim(); });
   var byId = {};
   rows_('house').forEach(function (r) {
     var id = String(r[0]);
@@ -43,7 +51,7 @@ function readState_() {
     if (s) s.results.push({ name: String(r[3]), amt: Number(r[4]) });
   });
   var sessions = labelSessions(sortSessions(Object.keys(byId).map(function (k) { return byId[k]; })));
-  return { players: players, sessions: sessions };
+  return { players: players, styles: styles, sessions: sessions };
 }
 
 function json_(obj) {
@@ -55,6 +63,7 @@ function ensureFormat_(st) {
   var ss = ss_();
   if (ss.getSpreadsheetTimeZone() !== 'Asia/Taipei') ss.setSpreadsheetTimeZone('Asia/Taipei');
   fixTimestamps_();
+  seedStyles_();
   var log = sheet_('log');
   if (log.getRange('D1').getNumberFormat() === '@') return;
   log.getRange('D:D').setNumberFormat('@');
@@ -66,6 +75,17 @@ function ensureFormat_(st) {
     log.getRange(2, 4, n, 1).setValues(ids.map(function (r) { return [labels[String(r[0])] || String(r[0])]; }));
   }
   writeOverview_(st || readState_());
+}
+
+function seedStyles_() {
+  var ps = sheet_('players');
+  if (String(ps.getRange('C1').getValue()) === '造型') return;
+  ps.getRange('C1').setValue('造型').setFontWeight('bold');
+  var n = ps.getLastRow() - 1;
+  if (n > 0) {
+    var names = ps.getRange(2, 1, n, 1).getValues();
+    ps.getRange(2, 3, n, 1).setValues(names.map(function (r) { return [INITIAL_STYLES[String(r[0]).trim()] || '']; }));
+  }
 }
 
 // 寫入時間一律存台北時間文字，不受試算表時區影響
@@ -95,7 +115,7 @@ function doGet() {
   try {
     var st = readState_();
     ensureFormat_(st);
-    return json_({ ok: true, players: st.players, sessions: st.sessions });
+    return json_({ ok: true, players: st.players, styles: st.styles, sessions: st.sessions });
   } catch (err) {
     return json_({ ok: false, error: String(err.message || err) });
   }
