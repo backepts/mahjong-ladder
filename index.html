@@ -107,6 +107,8 @@ footer a{color:var(--sub)}
 .rec .nm small{display:block;font-size:11px;color:var(--dim);font-weight:400}
 .rec .num{font-size:15px;font-weight:700}
 .ico{flex:none;display:block}
+.tm{display:flex;flex-direction:column;align-items:center;width:44px}
+.tm span{font-size:10px;color:#c4c0ff;max-width:44px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:400}
 .pc .ico{display:inline-block;vertical-align:-5px;margin:-2px 4px -2px -4px}
 /* 付款碼彈窗 */
 .ava{background:none;border:none;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -485,10 +487,10 @@ function recBlock(title, list, val, helmetTop) {
   return `<div class="sec">${title}</div><div class="recs">${rows || '<div class="hint" style="padding:10px 0">還沒有紀錄</div>'}</div>`;
 }
 
-// 最快／最慢：每列是那一桌四個人的頭像組合
+// 最快／最慢：每列是那一桌四個人的頭像＋名字；目前只列第一（同分並列），場次多了再改回前三
 function tableBlock(title, list) {
   const rows = list.map(it => `<div class="rec"><div class="medal num" style="background:${MEDAL[it.rank - 1][0]};color:${MEDAL[it.rank - 1][1]}">${it.rank}</div>
-    <div class="nm"><div style="display:flex;gap:2px">${it.s.results.map(r => avatar(r.name, 0, 32)).join('')}</div><small>${esc(it.s.label)}・${esc(it.s.start)}～${esc(it.s.end)}</small></div>
+    <div class="nm"><div style="display:flex;gap:4px">${it.s.results.map(r => `<div class="tm">${avatar(r.name, 0, 32)}<span>${esc(r.name)}</span></div>`).join('')}</div><small>${esc(it.s.label)}・${esc(it.s.start)}～${esc(it.s.end)}</small></div>
     <span class="num" style="color:var(--white)">${it.v} 分</span></div>`).join('');
   return `<div class="sec">${title}</div><div class="recs">${rows || '<div class="hint" style="padding:10px 0">還沒有記時間的桌</div>'}</div>`;
 }
@@ -505,8 +507,8 @@ function renderRecords() {
     recBlock('單場最輸', top3(singles.filter(x => x.v < 0), (a, b) => a.v < b.v), money) +
     recBlock('出席（打了幾桌）', top3(attend, (a, b) => a.v > b.v), it => `<span class="num" style="color:var(--white)">${it.v} 桌</span>`) +
     recBlock('連續戰鬥天數', top3(streaks(), (a, b) => a.v > b.v), it => `<span class="num" style="color:var(--white)">${it.v} 天</span>`, true) +
-    tableBlock('最快場次（每將平均）', top3(timed, (a, b) => a.v < b.v)) +
-    tableBlock('最慢場次（每將平均）', top3(timed, (a, b) => a.v > b.v)) +
+    tableBlock('最快場次（每將平均）', top3(timed, (a, b) => a.v < b.v).filter(it => it.rank === 1)) +
+    tableBlock('最慢場次（每將平均）', top3(timed, (a, b) => a.v > b.v).filter(it => it.rank === 1)) +
     '<div class="hint" style="margin-top:10px">同分並列同名次。連續戰鬥天數第一名戴好戰者頭盔</div>';
 }
 
