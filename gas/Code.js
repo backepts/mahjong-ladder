@@ -142,7 +142,7 @@ function authorizeDrive() {
   Logger.log('付款碼資料夾：' + DriveApp.getFolderById(PAY_FOLDER_ID).getName());
 }
 
-var STYLES = ['男短髮', '男刺蝟頭', '光頭', '女長髮', '女短髮', '女馬尾', '口罩男', '企鵝', '哥布林', '綠巨人', '高爾夫', '高爾夫女', '肉乾豬', '憂鬱青蛙'];
+var STYLES = ['男短髮', '男刺蝟頭', '光頭', '女長髮', '女短髮', '女馬尾', '口罩男', '企鵝', '哥布林', '綠巨人', '高爾夫', '高爾夫女', '肉乾豬', '憂鬱青蛙', '奧樂雞'];
 
 // 改某人的造型（Beck 跟 Claude 說要換時用）；空字串＝改回自動配
 function setStyle_(payload) {
