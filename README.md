@@ -52,7 +52,7 @@ GAS Web App（Beck 個人 Gmail becktsai0708，任何人可呼叫）
 ## 目前進度
 
 - 做到哪：Rank｜戰況回顧｜紀錄保持人、像素頭像、付款碼、對局時間都已上線；後端 v12
-- 下一步：無
+- 下一步：Joy 的付款碼等她給不會過期的版本（第一銀行，10/26 給的那張 10/27 就過期，沒放）；帳號由 Beck 自己填「付款資料」分頁
 - 等 Beck 決定：無
 - 改版流程：改 index.html → `python3 tools/build_lab.py` → 把 lab/（＋新增的共用檔如 icons/）帶到 main 推上去給 Beck 看 → 同意才 merge 推 main（push main＝網頁立刻換版；每天 18:00 自動備份也會 push，改到一半一定開分支）
 - 圖示來源：DUST FISH 插畫（https://jp.pinterest.com/pin/826480969128407920/），裁切範圍 (130,120)-(630,620)；Beck 決定群組自用、網頁底部標註作者
